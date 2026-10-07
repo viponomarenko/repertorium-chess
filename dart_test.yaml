@@ -1,0 +1,5 @@
+tags:
+  perf:
+    skip: "Run explicitly: flutter test --tags perf"
+  # Pixel comparisons of the typography preview; rendered on macOS.
+  golden: {}

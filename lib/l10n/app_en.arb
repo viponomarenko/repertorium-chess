@@ -1,0 +1,2054 @@
+{
+  "@@locale": "en",
+  "ok": "OK",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "create": "Create",
+  "rename": "Rename",
+  "more": "More",
+  "back": "Back",
+  "done": "Done",
+  "retry": "Try again",
+  "refresh": "Refresh",
+  "stop": "Stop",
+  "check": "Check",
+  "all": "All",
+  "any": "Any",
+  "none": "None",
+  "off": "Off",
+  "auto": "Auto",
+  "exit": "Exit",
+  "name": "Name",
+  "description": "Description",
+  "search": "Search",
+  "share": "Share",
+  "saveToFile": "Save to file",
+  "copyToClipboard": "Copy to clipboard",
+  "copied": "Copied",
+  "saved": "Saved",
+  "saving": "Saving…",
+  "white": "White",
+  "black": "Black",
+  "color": "Color",
+  "start": "Start",
+  "install": "Install",
+  "connect": "Connect",
+  "connected": "Connected",
+  "disconnect": "Disconnect",
+  "download": "Download",
+  "dismiss": "Hide",
+  "resolve": "Resolve",
+  "replace": "Replace",
+  "merge": "Merge",
+  "keepOld": "Keep old",
+  "defer": "Defer",
+  "analyze": "Analyze",
+  "train": "Train",
+  "builder": "Line editor",
+  "line": "line",
+  "navToday": "Today",
+  "navRepertoires": "Repertoires",
+  "navLibrary": "Library",
+  "navMore": "More",
+  "nothingFound": "Nothing found",
+  "nothingHere": "Nothing here",
+  "selectAll": "Select all",
+  "selectNone": "Select none",
+  "selectedCount": "{count} selected",
+  "@selectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "versionN": "Version {version}",
+  "@versionN": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "language": "Language",
+  "systemDefault": "System",
+  "tagline": "Learn your openings - move by move, position by position.",
+  "onbRepTitle": "Your repertoire",
+  "onbRepText": "Build lines by hand or import them from PGN, Lichess studies and your games.",
+  "onbTrainTitle": "Smart training",
+  "onbTrainText": "You play your moves, Repertorium chess answers for the opponent. Spaced repetition remembers every position.",
+  "onbPgnTitle": "Full PGN support",
+  "onbPgnText": "Read and edit games with variations, comments and arrows. Cyrillic files from ChessBase too.",
+  "onbOfflineTitle": "Offline, no account",
+  "onbOfflineText": "Everything stays on your device. Lichess and Chess.com are optional.",
+  "getStarted": "Get started",
+  "welcomeTitle": "Welcome to Repertorium chess",
+  "welcomeMessage": "A ready-made repertoire is the quickest way to try training. You can also build your own or open a PGN file.",
+  "createRepertoire": "New repertoire",
+  "installStarter": "Ready-made repertoires",
+  "importPgn": "Import PGN",
+  "todayHeadline": "Today",
+  "allDone": "All caught up! Come back later.",
+  "todaySummary": "{due, plural, =0{Nothing to review} one{{due} move to review} other{{due} moves to review}} · {fresh, plural, =0{no new} one{{fresh} new} other{{fresh} new}}",
+  "@todaySummary": {
+    "placeholders": {
+      "due": {
+        "type": "int"
+      },
+      "fresh": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewDue": "Review ({count})",
+  "@reviewDue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "learnNew": "Learn new ({count})",
+  "@learnNew": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakDays": "{count, plural, =0{No streak yet} one{{count} day in a row} other{{count} days in a row}}",
+  "@streakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalProgress": "Daily goal: {done} of {goal}",
+  "@goalProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "goal": {
+        "type": "int"
+      }
+    }
+  },
+  "problemPositions": "Frequent mistakes",
+  "problemPositionsHint": "{count, plural, one{{count} move with frequent mistakes in 30 days} other{{count} moves with frequent mistakes in 30 days}}",
+  "@problemPositionsHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "repertoireCounts": "{learned} of {total, plural, one{{total} move} other{{total} moves}} learned",
+  "@repertoireCounts": {
+    "placeholders": {
+      "learned": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsSubtitle": "Lichess and Chess.com",
+  "gapsTitle": "My games vs repertoire",
+  "gapsSubtitle": "Where your games left the repertoire",
+  "openingsTitle": "Opening catalog",
+  "openingsSubtitle": "Names and ECO codes",
+  "statsTitle": "Statistics",
+  "statsSubtitle": "Progress, forecast, weak spots",
+  "analysisBoard": "Analysis board",
+  "analysisBoardSubtitle": "Free analysis with the engine",
+  "positionEditor": "Position editor",
+  "positionEditorSubtitle": "Set up any position",
+  "settingsTitle": "Settings",
+  "settingsSubtitle": "Board, training, engine, language",
+  "backupTitle": "Backup",
+  "backupSubtitle": "Export or restore all your data",
+  "aboutTitle": "About",
+  "aboutSubtitle": "Version, licenses, source code",
+  "libraryEmptyTitle": "Your library is empty",
+  "libraryEmptyMessage": "Import PGN files, paste games from the clipboard or open a Lichess link.",
+  "newCollection": "New collection",
+  "newCollectionNamed": "New collection “{name}”",
+  "@newCollectionNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "collection": "Collection",
+  "collectionName": "Collection name",
+  "gamesCount": "{count, plural, =0{No games} one{{count} game} other{{count} games}}",
+  "@gamesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteCollectionQ": "Delete “{name}”?",
+  "@deleteCollectionQ": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteCollectionMessage": "{count} games will be deleted. Repertoires are not affected.",
+  "@deleteCollectionMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteGamesQ": "Delete {count} games?",
+  "@deleteGamesQ": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "moveTo": "Move to…",
+  "searchGamesHint": "Players, event, ECO, year…",
+  "newGame": "New game",
+  "newGameHint": "Start from the initial position",
+  "newGameFromPosition": "New game from a position",
+  "importHere": "Import into this collection",
+  "noGames": "No games yet",
+  "pliesCount": "{count, plural, one{{count} move} other{{count} moves}}",
+  "@pliesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gameHasErrors": "The file contained errors in this game",
+  "untitledGame": "Untitled game",
+  "importTitle": "Import",
+  "importAction": "Import",
+  "importedOn": "Imported {date}",
+  "@importedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "fromFile": "From a file",
+  "fromFileHint": "PGN, FEN or EPD from the device, cloud or messengers",
+  "fromClipboard": "Paste from clipboard",
+  "fromClipboardHint": "PGN, FEN or a link - detected automatically",
+  "importByLink": "By link",
+  "importByLinkHint": "Lichess study, chapter or game, or a URL of a PGN file",
+  "pastePgnOrFen": "Type or paste text",
+  "typeTextHint": "Moves like “1. e4 e5 2. Nf3” or a FEN",
+  "clipboardEmpty": "The clipboard is empty",
+  "invalidLink": "Invalid link",
+  "lichessNotFound": "Not found on Lichess (or the study is private)",
+  "lichessPrivate": "This study is private. Log in to Lichess to import it.",
+  "downloadFailed": "Download failed: {error}",
+  "@downloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "reading": "Reading…",
+  "noGamesFound": "No games found",
+  "noGamesFoundHint": "The text does not look like PGN or FEN. Try another encoding or check the file.",
+  "foundGames": "{count, plural, one{Found {count} game} other{Found {count} games}}",
+  "@foundGames": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noErrors": "No errors",
+  "gamesWithErrors": "{count, plural, one{{count} game has an error and is readable up to it.} other{{count} games have errors and are readable up to them.}}",
+  "@gamesWithErrors": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "problemsList": "Problems in the file",
+  "problemsListHint": "Game and line number",
+  "gameN": "Game {n}",
+  "@gameN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "saveTo": "Save to",
+  "saveToLibrary": "Save to library",
+  "saveAndAddToRepertoire": "Save and add to a repertoire",
+  "onlyAddToRepertoire": "Only add to a repertoire",
+  "encoding": "Encoding",
+  "addToRepertoire": "Add to repertoire",
+  "exportPgn": "Export PGN",
+  "gameNotFound": "Game not found",
+  "chooseVariation": "Choose a variation",
+  "commentBefore": "Comment before the move",
+  "commentAfter": "Comment after the move",
+  "gameComment": "Game comment",
+  "annotateMove": "Annotate {san}",
+  "@annotateMove": {
+    "placeholders": {
+      "san": {
+        "type": "String"
+      }
+    }
+  },
+  "annotate": "Annotate",
+  "clearAnnotations": "Clear annotations",
+  "promoteVariation": "Promote variation",
+  "makeMainline": "Make main line",
+  "addSubtreeToRepertoire": "Add from here to repertoire",
+  "deleteAfter": "Delete moves after this",
+  "deleteVariation": "Delete variation",
+  "deleteFromHere": "Delete from here",
+  "copyFen": "Copy FEN",
+  "pasteFen": "Paste FEN",
+  "myAnalyses": "My analyses",
+  "deleteGameQ": "Delete this game?",
+  "deleteGame": "Delete game",
+  "undo": "Undo",
+  "redo": "Redo",
+  "flipBoard": "Flip board",
+  "gameInfo": "Game info",
+  "editPosition": "Edit position",
+  "boardLabel": "Chessboard",
+  "gameParseIssues": "The file had an error: {issue}. The moves after it are kept in a comment marked [?].",
+  "@gameParseIssues": {
+    "placeholders": {
+      "issue": {
+        "type": "String"
+      }
+    }
+  },
+  "addCommentHint": "Tap to add a comment",
+  "drawColor": "Color:",
+  "clearShapes": "Clear arrows",
+  "engine": "Engine",
+  "drawMode": "Draw arrows",
+  "toStart": "To start",
+  "previousMove": "Previous move",
+  "nextMove": "Next move",
+  "nextMoveVariations": "Next move (long press: variations)",
+  "toEnd": "To end",
+  "otherGames": "Other games",
+  "previousGame": "Previous game",
+  "nextGame": "Next game",
+  "nagGood": "Good move",
+  "nagMistake": "Mistake",
+  "nagBrilliant": "Brilliant move",
+  "nagBlunder": "Blunder",
+  "nagInteresting": "Interesting move",
+  "nagDubious": "Dubious move",
+  "nagOnlyMove": "Only move",
+  "nagEqual": "Equal position",
+  "nagUnclear": "Unclear",
+  "nagWhiteSlightly": "White is slightly better",
+  "nagBlackSlightly": "Black is slightly better",
+  "nagWhiteModerate": "White is better",
+  "nagBlackModerate": "Black is better",
+  "nagWhiteDecisive": "White is winning",
+  "nagBlackDecisive": "Black is winning",
+  "nagZugzwang": "Zugzwang",
+  "nagDevelopment": "Development advantage",
+  "nagInitiative": "Initiative",
+  "nagAttack": "Attack",
+  "nagCompensation": "Compensation",
+  "nagCounterplay": "Counterplay",
+  "nagTimeTrouble": "Time trouble",
+  "nagWithIdea": "With the idea",
+  "nagNovelty": "Novelty",
+  "hEvent": "Event",
+  "hSite": "Site",
+  "hDate": "Date",
+  "hRound": "Round",
+  "hResult": "Result",
+  "hWhiteElo": "White Elo",
+  "hBlackElo": "Black Elo",
+  "hAnnotator": "Annotator",
+  "hOpening": "Opening",
+  "tagName": "Tag",
+  "tagValue": "Value",
+  "addTag": "Add tag",
+  "setupKings": "Each side needs exactly one king",
+  "setupPawns": "Pawns cannot stand on the first or last rank",
+  "setupOppositeCheck": "The side not to move is in check",
+  "setupImpossibleCheck": "Impossible check",
+  "setupInvalid": "Invalid position",
+  "invalidFen": "Not a valid FEN",
+  "eraser": "Eraser",
+  "dragMode": "Move pieces",
+  "startPosition": "Initial position",
+  "clearBoard": "Clear board",
+  "whiteToMove": "White to move",
+  "blackToMove": "Black to move",
+  "castling": "Castling",
+  "enPassant": "En passant",
+  "analyzePosition": "Analyze position",
+  "createRepertoireFromHere": "New repertoire from here",
+  "noRepertoires": "No repertoires yet",
+  "noRepertoiresHint": "A repertoire is the set of lines you want to know by heart, for White or for Black.",
+  "defaultRepNameWhite": "White repertoire",
+  "defaultRepNameBlack": "Black repertoire",
+  "repNameHint": "e.g. “White: 1.e4”",
+  "iPlayAs": "I play as",
+  "iPlayWhite": "I play White",
+  "iPlayBlack": "I play Black",
+  "startPositionOptional": "Start position (optional)",
+  "startPositionHelp": "Moves (e.g. 1. e4 c5) or a FEN. Leave empty to start from the initial position.",
+  "invalidMovesOrFen": "Could not read these moves or FEN",
+  "starterInstalled": "Installed “{name}”",
+  "@starterInstalled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "starterHint": "Small demo repertoires with the most popular moves. You can edit them like your own.",
+  "repertoireNotFound": "Repertoire not found",
+  "tabPositions": "Positions",
+  "tabTree": "Tree",
+  "tabProblems": "Problems",
+  "tabStats": "Statistics",
+  "repertoireSettings": "Repertoire settings",
+  "importFromLibrary": "Import from library",
+  "importFromFile": "Import from file or link",
+  "exportToLichess": "Export to a Lichess study",
+  "fillWeights": "Fill opponent weights from statistics",
+  "checkWithEngine": "Check with the engine",
+  "deleteRepertoire": "Delete repertoire",
+  "deleteRepertoireQ": "Delete “{name}”?",
+  "@deleteRepertoireQ": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteRepertoireMessage": "{positions, plural, one{{positions} position} other{{positions} positions}} and the training history of {cards, plural, one{{cards} move} other{{cards} moves}} will be deleted.",
+  "@deleteRepertoireMessage": {
+    "placeholders": {
+      "positions": {
+        "type": "int"
+      },
+      "cards": {
+        "type": "int"
+      }
+    }
+  },
+  "chooseCollection": "Choose a collection",
+  "cardDeferred": "Training disabled: unresolved conflict",
+  "cardNone": "No move to train here yet",
+  "cardSuspended": "Paused",
+  "cardNew": "New - not learned yet",
+  "cardDueNow": "Time to review",
+  "cardDueToday": "Due today",
+  "cardDueInDays": "{days, plural, one{Next review in {days} day} other{Next review in {days} days}}",
+  "@cardDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "cardAtPosition": "Your move here",
+  "mainExistsTitle": "There is already a main move",
+  "mainExistsMessage": "This position already has the main move {main}. What to do with {newMove}?",
+  "@mainExistsMessage": {
+    "placeholders": {
+      "main": {
+        "type": "String"
+      },
+      "newMove": {
+        "type": "String"
+      }
+    }
+  },
+  "addAsAlternative": "Add as alternative",
+  "replaceMain": "Make it main",
+  "movesAdded": "Added to the repertoire",
+  "makeMain": "Make main",
+  "makeAlternative": "Make alternative",
+  "weightValue": "Weight: {weight}",
+  "@weightValue": {
+    "placeholders": {
+      "weight": {
+        "type": "int"
+      }
+    }
+  },
+  "weightShort": "weight {weight}",
+  "@weightShort": {
+    "placeholders": {
+      "weight": {
+        "type": "int"
+      }
+    }
+  },
+  "weightFor": "Weight of {san}",
+  "@weightFor": {
+    "placeholders": {
+      "san": {
+        "type": "String"
+      }
+    }
+  },
+  "weightHint": "How often the opponent plays this move in training (0-100).",
+  "moveComment": "Comment",
+  "suspendBranch": "Pause training of this branch",
+  "resumeBranch": "Resume training of this branch",
+  "cardsSuspended": "{count, plural, =0{Nothing to pause} one{{count} move paused} other{{count} moves paused}}",
+  "@cardsSuspended": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cardsResumed": "{count, plural, =0{Nothing to resume} one{{count} move resumed} other{{count} moves resumed}}",
+  "@cardsResumed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteBranch": "Delete move and branch",
+  "deleteMoveQ": "Delete {san}?",
+  "@deleteMoveQ": {
+    "placeholders": {
+      "san": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlan": "{positions, plural, one{{positions} position} other{{positions} positions}} will be deleted, including training progress for {cards, plural, one{{cards} move} other{{cards} moves}}. Positions still reachable through transpositions are kept.",
+  "@deletePlan": {
+    "placeholders": {
+      "positions": {
+        "type": "int"
+      },
+      "cards": {
+        "type": "int"
+      }
+    }
+  },
+  "alternativeBecomesMain": "{san} will become the main move.",
+  "@alternativeBecomesMain": {
+    "placeholders": {
+      "san": {
+        "type": "String"
+      }
+    }
+  },
+  "newMovesNotInRepertoire": "New moves (not in the repertoire yet)",
+  "transpositionNotice": "This position also arises after: {lines}",
+  "@transpositionNotice": {
+    "placeholders": {
+      "lines": {
+        "type": "String"
+      }
+    }
+  },
+  "transposition": "transposition",
+  "transposesTo": "Transposes to",
+  "engineFlagTitle": "The engine flags this move (−{loss})",
+  "@engineFlagTitle": {
+    "placeholders": {
+      "loss": {
+        "type": "String"
+      }
+    }
+  },
+  "engineFlagHint": "Engine prefers {best} (depth {depth}). Nothing was changed.",
+  "@engineFlagHint": {
+    "placeholders": {
+      "best": {
+        "type": "String"
+      },
+      "depth": {
+        "type": "int"
+      }
+    }
+  },
+  "positionComment": "Position comment",
+  "addPositionComment": "Add a comment to this position",
+  "yourMoves": "Your moves",
+  "opponentMoves": "Opponent moves",
+  "showArrows": "Show arrows",
+  "noOwnMoveHint": "No answer prepared. Make a move on the board to add it.",
+  "noOpponentMovesHint": "End of the line. Make an opponent move on the board to continue.",
+  "trainFromHere": "Train",
+  "roleMain": "main",
+  "roleAlternative": "alternative",
+  "lineEnds": "line ends",
+  "modeReview": "Review",
+  "modeReviewHint": "{count, plural, =0{Nothing to review now} one{{count} move to review} other{{count} moves to review}}",
+  "@modeReviewHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modeLearn": "New moves",
+  "modeLearnHint": "{count, plural, =0{No new moves} one{{count} new move} other{{count} new moves}}",
+  "@modeLearnHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modeDrill": "All lines in a row",
+  "modeDrillHint": "Play every line of the branch; does not change your review schedule",
+  "modeProblems": "Frequent mistakes",
+  "modeProblemsHint": "{count, plural, =0{No frequent mistakes} one{{count} move with frequent mistakes} other{{count} moves with frequent mistakes}}",
+  "@modeProblemsHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "transpositionsAsComments": "Transpositions as comments",
+  "transpositionsAsCommentsHint": "Each position is written once; other paths get a note",
+  "transpositionsExpanded": "Expand transpositions",
+  "transpositionsExpandedHint": "Transposed lines are repeated in full",
+  "connectLichessFirst": "Connect your Lichess account first",
+  "loginFailed": "Login failed: {error}",
+  "@loginFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseStudy": "Choose a study",
+  "newPrivateStudy": "New private study",
+  "exportingToLichess": "Exporting to Lichess…",
+  "tooManyChapters": "Too many chapters",
+  "tooManyChaptersMessage": "The export has {count, plural, one{{count} chapter} other{{count} chapters}}, but the study has room for {free} (Lichess limit: 64). Only the first {free} will be exported.",
+  "@tooManyChaptersMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "free": {
+        "type": "int"
+      }
+    }
+  },
+  "exportedChapters": "Exported chapters: {count}",
+  "@exportedChapters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "explorerNeedsLogin": "The opening explorer needs a Lichess login",
+  "explorerNeedsLoginHint": "Lichess requires authentication for the explorer since 2026.",
+  "fillingWeights": "Filling weights from the opening explorer…",
+  "fillingWeightsProgress": "Positions: {done} of {total}",
+  "@fillingWeightsProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "weightsFilled": "Weights updated",
+  "engineChecking": "Checking with the engine…",
+  "engineCheckingProgress": "{done} of {total} · flagged {flagged}",
+  "@engineCheckingProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "flagged": {
+        "type": "int"
+      }
+    }
+  },
+  "engineCheckDone": "{count, plural, =0{No doubtful moves found} one{Flagged {count} move - see Problems} other{Flagged {count} moves - see Problems}}",
+  "@engineCheckDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opponentStrategy": "Opponent move choice",
+  "strategyDueFirst": "Overdue first",
+  "strategyWeighted": "By weight",
+  "strategyUniform": "Uniformly random",
+  "strategyLeastLearned": "Least learned first",
+  "strategyDueFirstHint": "Leads to the most overdue position; otherwise by weight",
+  "strategyWeightedHint": "Random, proportional to move weights",
+  "strategyUniformHint": "Every move equally likely",
+  "strategyLeastLearnedHint": "Toward the weakest part of the repertoire",
+  "acceptAlternatives": "Accept alternative moves",
+  "acceptAlternativesHint": "Off: an alternative is not a mistake, but you are asked to play the main move",
+  "deferredConflicts": "Deferred conflicts",
+  "deferredConflictsHint": "Positions with several candidate main moves; training is off",
+  "gaps": "Gaps",
+  "gapsHint": "The opponent has a move here, but you have no answer",
+  "frequentMistakes": "Frequent mistakes",
+  "frequentMistakesHint": "At least 2 mistakes in 30 days",
+  "engineFlags": "Engine flags",
+  "engineFlagsHint": "Main moves the engine considers doubtful",
+  "coverageTitle": "Repertoire coverage",
+  "coverageHint": "Popular opponent moves (more than {percent}% of games) that are missing",
+  "@coverageHint": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "coverageItem": "{percent}% of games · {games, plural, one{{games} game} other{{games} games}}",
+  "@coverageItem": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      },
+      "games": {
+        "type": "int"
+      }
+    }
+  },
+  "coverageNone": "No popular gaps found",
+  "onlyProblems": "Only problems",
+  "collapseAll": "Collapse all",
+  "noProblems": "No problems found",
+  "emptyRepertoire": "The repertoire is empty. Open the builder to add moves.",
+  "importDone": "{count, plural, =0{Nothing new was added} one{Added {count} move} other{Added {count} moves}}",
+  "@importDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "resolveConflicts": "Resolve conflicts",
+  "targetRepertoire": "Repertoire",
+  "newRepertoire": "New repertoire",
+  "subtreeFrom": "Only the branch starting with {line}",
+  "@subtreeFrom": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "gamesSelected": "Games: {selected} of {total}",
+  "@gamesSelected": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "ownMoves": "Your moves",
+  "mainLineOnly": "Main line only",
+  "ownMainOnlyHint": "Your side variations in the document are ignored",
+  "allVariations": "All variations",
+  "ownAllHint": "Side variations become alternatives",
+  "opponentMovesTitle": "Opponent moves",
+  "maxDepthUnlimited": "Depth: unlimited",
+  "maxDepthPlies": "Depth: up to move {count}",
+  "@maxDepthPlies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "transferComments": "Transfer comments",
+  "transferArrows": "Transfer arrows and highlights",
+  "preview": "Preview",
+  "newPositions": "new positions",
+  "newMoves": "new moves",
+  "matchedMoves": "already known",
+  "conflicts": "conflicts",
+  "nothingToImport": "Nothing to import: the document does not reach the start position of the repertoire.",
+  "commentCollisions": "{count} comments differ from existing ones:",
+  "@commentCollisions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflictsWillBeShown": "After import you will choose the main move for each conflict.",
+  "conflictsExplanation": "In these positions the document suggests a different main move. Choose the main move or defer (training of the position is off until resolved).",
+  "keepAllCurrent": "Keep all current",
+  "deferAll": "Defer all",
+  "chooseMainMove": "Main move:",
+  "deleteOtherCandidates": "Delete the other candidates",
+  "deleteOtherCandidatesHint": "Otherwise they stay as alternatives",
+  "finishImport": "Finish import",
+  "unresolvedLeft": "Unresolved: {count}",
+  "@unresolvedLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recallStart": "Now play the same line without hints",
+  "demoMessage": "Remember this move and play it",
+  "yourMove": "Your move",
+  "yourMoveDue": "Your move - time to recall",
+  "correct": "Correct!",
+  "correctGraded": "Correct! ({grade})",
+  "@correctGraded": {
+    "placeholders": {
+      "grade": {
+        "type": "String"
+      }
+    }
+  },
+  "alternativeAccepted": "Alternative from the repertoire - accepted",
+  "alternativeRejected": "{san} is also in the repertoire, but we train the main move",
+  "@alternativeRejected": {
+    "placeholders": {
+      "san": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatShownMove": "Play the move shown by the arrow",
+  "wrongRevealed": "This is the move - play it",
+  "wrongTryAgain": "Not that move. Try again (mistakes: {attempt})",
+  "@wrongTryAgain": {
+    "placeholders": {
+      "attempt": {
+        "type": "int"
+      }
+    }
+  },
+  "hintLevel": "{level, plural, =1{Hint: the piece to move} =2{Hint: the destination square} other{Hint: the move}}",
+  "@hintLevel": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "hint": "Hint",
+  "showAnswer": "Show the move",
+  "why": "Why?",
+  "whyTitle": "Why {san}?",
+  "@whyTitle": {
+    "placeholders": {
+      "san": {
+        "type": "String"
+      }
+    }
+  },
+  "noCommentYet": "No comment in the repertoire for this move yet. You can add one while editing the repertoire.",
+  "engineOpinion": "Ask the engine",
+  "newCardRecall": "First real test of a new move",
+  "gradeAgain": "again",
+  "gradeHard": "hard",
+  "gradeGood": "good",
+  "gradeEasy": "easy",
+  "lineCompletePerfect": "Line completed without mistakes!",
+  "lineCompleteMistakes": "{count, plural, one{Line completed with {count} mistake} other{Line completed with {count} mistakes}}",
+  "@lineCompleteMistakes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextLine": "Next line",
+  "showLine": "Show line",
+  "sessionSettings": "Session settings",
+  "sessionLimit": "Session length",
+  "noLimit": "Unlimited",
+  "linesN": "{count, plural, one{{count} line} other{{count} lines}}",
+  "@linesN": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesN": "{count} min",
+  "@minutesN": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exitTrainingQ": "Stop training?",
+  "exitTrainingMessage": "Your progress so far is saved.",
+  "progressLearn": "New: {count}",
+  "@progressLearn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "progressReview": "{reviewed} · lines {lines}",
+  "@progressReview": {
+    "placeholders": {
+      "reviewed": {
+        "type": "int"
+      },
+      "lines": {
+        "type": "int"
+      }
+    }
+  },
+  "nothingToTrain": "Nothing to train right now",
+  "sessionDone": "Session complete!",
+  "statLines": "{count, plural, one{line} other{lines}}",
+  "@statLines": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statCorrect": "correct",
+  "statReviewed": "reviewed",
+  "statIntroduced": "new learned",
+  "statTime": "time",
+  "engineError": "Engine error",
+  "engineStarting": "Starting the engine…",
+  "engineDepth": "Depth {depth}",
+  "@engineDepth": {
+    "placeholders": {
+      "depth": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudDepth": "Lichess, depth {depth}",
+  "@cloudDepth": {
+    "placeholders": {
+      "depth": {
+        "type": "int"
+      }
+    }
+  },
+  "localEngine": "Local engine",
+  "cloudEval": "Lichess eval",
+  "cloudMissing": "No Lichess eval",
+  "addLineAsVariation": "Add as a variation",
+  "openingExplorer": "Opening explorer",
+  "masters": "Masters",
+  "explorerError": "Could not load the explorer",
+  "explorerNoGames": "No games in this position",
+  "lichessSessionExpired": "Lichess session expired - log in again",
+  "lichessRateLimited": "Lichess temporarily limited requests; waiting a minute…",
+  "accountsTitle": "Accounts",
+  "accountsIntro": "Connecting accounts is optional. Repertorium chess works fully offline.",
+  "lichessBenefits": "Import your studies and games, use the opening explorer and export repertoires to studies.",
+  "loginWithLichess": "Log in with Lichess",
+  "lichessScopesInfo": "Repertorium chess only asks to read your studies. Permission to write is requested when you first export a repertoire.",
+  "loginAgain": "Log in again",
+  "sessionExpired": "Login expired",
+  "connectedAs": "Connected as {name}",
+  "@connectedAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "connectedSince": "Since {date}",
+  "@connectedSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lastSync": "Last sync: {date}",
+  "@lastSync": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "disconnectQ": "Disconnect {service}?",
+  "@disconnectQ": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "disconnectLichessMessage": "The access token will be revoked on Lichess and removed from this device.",
+  "myStudies": "My studies",
+  "myGames": "My games",
+  "noStudies": "No studies",
+  "updatedOn": "Updated {date}",
+  "@updatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "chessComInfo": "Chess.com has no login for third-party apps: just enter your username to download your public games.",
+  "chessComUsername": "Chess.com username",
+  "chessComNotFound": "Player “{name}” not found",
+  "@chessComNotFound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chessComStudiesNote": "Chess.com studies and library are not available via the API. Export PGN on the website and open the file in Repertorium chess.",
+  "notAffiliated": "Repertorium chess is an independent open-source app, not affiliated with Lichess or Chess.com.",
+  "syncDone": "{count, plural, =0{No new games} one{Added {count} game} other{Added {count} games}}",
+  "@syncDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncFailed": "Stopped after {count, plural, one{{count} game} other{{count} games}}: {error}",
+  "@syncFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "analyzingGames": "Comparing games with repertoires…",
+  "analysisDone": "{count, plural, =0{Your games stay inside the repertoire} one{Found {count} place where a game left the repertoire} other{Found {count} places where games left the repertoire}}",
+  "@analysisDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clearDownloaded": "Delete downloaded games",
+  "clearDownloadedQ": "Delete all downloaded games?",
+  "analyzeVsRepertoire": "Check vs repertoire",
+  "downloadFrom": "Download from {service}",
+  "@downloadFrom": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "connectAccountFirst": "Connect an account",
+  "downloading": "Downloaded {downloaded}, new {added}",
+  "@downloading": {
+    "placeholders": {
+      "downloaded": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      }
+    }
+  },
+  "noDownloadedGames": "No downloaded games",
+  "noDownloadedGamesHint": "Download your games to see where they leave your repertoire.",
+  "vsOpponent": "vs {name}",
+  "@vsOpponent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadGames": "Download games",
+  "period": "Period",
+  "periodNew": "New since last time",
+  "periodMonth": "Last month",
+  "period3Months": "3 months",
+  "periodYear": "Year",
+  "timeControl": "Time control",
+  "ratedOnly": "Rated only",
+  "maxGames": "At most {count, plural, one{{count} game} other{{count} games}}",
+  "@maxGames": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reanalyze": "Analyze again",
+  "noGapsYet": "No analysis yet",
+  "noGapsYetHint": "Download your games from Lichess or Chess.com and compare them with your repertoires.",
+  "allRepertoires": "All repertoires",
+  "allTime": "All time",
+  "lastDays": "{days, plural, one{Last day} other{Last {days} days}}",
+  "@lastDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "gapUserDeviation": "You left the repertoire",
+  "gapOpponentNovelty": "Gap",
+  "gapEndOfBook": "Out of repertoire",
+  "gapUserText": "You played {played}; your repertoire has {expected}",
+  "@gapUserText": {
+    "placeholders": {
+      "played": {
+        "type": "String"
+      },
+      "expected": {
+        "type": "String"
+      }
+    }
+  },
+  "gapOpponentText": "The opponent played {played} - not in the repertoire",
+  "@gapOpponentText": {
+    "placeholders": {
+      "played": {
+        "type": "String"
+      }
+    }
+  },
+  "gapEndText": "The line ended; the game continued with {played}",
+  "@gapEndText": {
+    "placeholders": {
+      "played": {
+        "type": "String"
+      }
+    }
+  },
+  "happenedInGames": "{count, plural, one{Happened in {count} game} other{Happened in {count} games}}",
+  "@happenedInGames": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trainThisPosition": "Review",
+  "prepareAnswer": "Add an answer",
+  "extendLine": "Extend the line",
+  "gamesN": "Games ({count})",
+  "@gamesN": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openingsSearchHint": "Name or ECO code (e.g. B90)",
+  "exploreOpening": "Open on the board",
+  "general": "General",
+  "theme": "Theme",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "board": "Board",
+  "boardTheme": "Board colors",
+  "pieceSet": "Pieces",
+  "coordinates": "Coordinates",
+  "showLegalMoves": "Show legal moves",
+  "moveMethod": "How to move",
+  "moveMethodEither": "Drag or tap",
+  "moveMethodDrag": "Drag",
+  "moveMethodTap": "Tap two squares",
+  "animationSpeed": "Animation",
+  "sound": "Sound",
+  "haptics": "Vibration",
+  "training": "Training",
+  "newPerDay": "New moves per day",
+  "reviewsPerDay": "Reviews per day",
+  "dailyGoal": "Daily goal (answers)",
+  "goodThreshold": "“Good” if answered within",
+  "easyEnabled": "Fast answers count as “easy”",
+  "easyEnabledHint": "Easy answers get longer intervals",
+  "easyThreshold": "“Easy” if answered within",
+  "mistakesBeforeReveal": "Mistakes before showing the move",
+  "showComments": "Show comments",
+  "autoplayToDue": "Auto-play to the first move to review",
+  "autoplayToDueHint": "Opening moves are played quickly for you",
+  "drillAffectsSchedule": "\"All lines in a row\" changes the schedule",
+  "drillAffectsScheduleHint": "Answers in this mode move the review dates, as in a review",
+  "opponentDelay": "Opponent reply delay",
+  "desiredRetention": "Target share of remembered moves",
+  "reminder": "Reminder",
+  "dailyReminder": "Daily reminder",
+  "dailyReminderHint": "One quiet notification a day",
+  "notificationsDenied": "Notifications are not allowed for Repertorium chess in system settings",
+  "reminderBody": "Time to review your openings",
+  "reminderTime": "Time",
+  "engineLines": "Engine lines shown",
+  "engineThreads": "Engine threads",
+  "engineHash": "Engine memory",
+  "engineDepthLimit": "Depth limit",
+  "engineThreshold": "Flag moves that worsen the eval by more than",
+  "engineInTraining": "Engine in “Why?” during training",
+  "engineInTrainingHint": "Only on request, never as a hint",
+  "integrations": "Integrations",
+  "explorerRatings": "Lichess explorer ratings",
+  "explorerSpeeds": "Lichess explorer time controls",
+  "coverageThreshold": "Coverage threshold",
+  "clearExplorerCache": "Clear explorer cache",
+  "data": "Data",
+  "speedBullet": "Bullet",
+  "speedBlitz": "Blitz",
+  "speedRapid": "Rapid",
+  "speedClassical": "Classical",
+  "speedCorrespondence": "Correspondence",
+  "notABackup": "This is not a Repertorium chess backup",
+  "restoreTitle": "Restore backup",
+  "restoreSummary": "Backup from {date}: {repertoires} repertoires, {games} games, {cards} moves to remember.",
+  "@restoreSummary": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "repertoires": {
+        "type": "int"
+      },
+      "games": {
+        "type": "int"
+      },
+      "cards": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMerge": "Merge",
+  "restoreReplace": "Replace",
+  "restoreReplaceConfirm": "Replace all data?",
+  "restoreReplaceWarning": "All current collections, repertoires and progress will be deleted and replaced by the backup.",
+  "restoreDone": "Data restored",
+  "restoreFailed": "Restore failed: {error}",
+  "@restoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupExplanation": "A backup contains your collections, repertoires, training progress and settings in one .tabiya file.",
+  "backupShare": "Create and share a backup",
+  "backupSave": "Create and save to a file",
+  "restoreFromFile": "Restore from a file",
+  "restoreHint": "Choose “replace” or “merge” after picking the file",
+  "backupPrivacy": "Lichess tokens are never included in backups.",
+  "statPositions": "positions in the repertoire",
+  "statCards": "moves to remember",
+  "statLearned": "learned",
+  "statDueToday": "due now",
+  "statStreak": "{count, plural, one{day in a row} other{days in a row}}",
+  "@statStreak": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "forecastTitle": "Review forecast",
+  "forecastSummary": "Next 7 days: {week} · 30 days: {month}",
+  "@forecastSummary": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      }
+    }
+  },
+  "retentionTitle": "Retention",
+  "retentionHint": "Share of correct answers in scheduled reviews",
+  "days7": "7 days ({count})",
+  "@days7": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "days30": "30 days ({count})",
+  "@days30": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "days90": "90 days ({count})",
+  "@days90": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityTitle": "Answers per day",
+  "weakestPositions": "Weakest moves",
+  "mistakesLast30": "{count} mistakes in 30 days",
+  "@mistakesLast30": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutText": "Repertorium chess helps you learn chess openings: read and edit PGN, build a repertoire and train it with spaced repetition. Everything works offline.",
+  "licenseGpl": "License: GPL-3.0",
+  "licenseGplHint": "Free software: you may use, study, share and modify it.",
+  "sourceCode": "Source code",
+  "privacyPolicy": "Privacy",
+  "privacySummary": "No account needed, no analytics, no ads. Data stays on the device; Lichess/Chess.com are contacted only when you ask.",
+  "allLicenses": "All open-source licenses",
+  "thirdParty": "Third-party components",
+  "speakLongCastle": "Long castle",
+  "speakShortCastle": "Short castle",
+  "speakNullMove": "Null move",
+  "pieceKing": "King",
+  "pieceQueen": "Queen",
+  "pieceRook": "Rook",
+  "pieceBishop": "Bishop",
+  "pieceKnight": "Knight",
+  "piecePawn": "Pawn",
+  "speakTakes": "takes",
+  "speakPromotes": "promotes to {piece}",
+  "@speakPromotes": {
+    "placeholders": {
+      "piece": {
+        "type": "String"
+      }
+    }
+  },
+  "speakMate": "checkmate",
+  "speakCheck": "check",
+  "correctAgain": "Correct, with help - we will repeat it soon",
+  "correctHard": "Correct, but it took over {seconds} s - it will come back sooner",
+  "@correctHard": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "correctGood": "Correct!",
+  "correctEasy": "Correct and fast!",
+  "showAnswerHint": "Counts as a mistake: the move will be repeated soon",
+  "hintHint": "Each hint counts as a mistake",
+  "somethingWentWrong": "Something went wrong",
+  "leaveAnalysisQ": "Leave the analysis?",
+  "leaveAnalysisMessage": "The moves you added are not saved yet.",
+  "discard": "Discard",
+  "moveActions": "Move actions",
+  "nextLabel": "Next:",
+  "colorGreen": "Green",
+  "colorRed": "Red",
+  "colorBlue": "Blue",
+  "colorYellow": "Yellow",
+  "newLimitReached": "Daily limit of new moves reached. You can raise it in Settings.",
+  "nextReviewAt": "All reviewed! Next review: {when}",
+  "@nextReviewAt": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "extraPractice": "All lines in a row: 5 lines",
+  "dailyGoalShort": "daily goal",
+  "allDoneShort": "Done for today",
+  "addLines": "Add lines",
+  "loadingStudies": "Loading your studies…",
+  "exportedWithErrors": "Exported chapters: {count}. Lichess reported: {error}",
+  "@exportedWithErrors": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "lichessError": "Lichess error: {message}",
+  "@lichessError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "networkError": "No connection or the service is unavailable. Try again later.",
+  "pendingMovesQ": "Add the new moves?",
+  "pendingMovesMessage": "You played {moves}, but these moves are not in the repertoire yet.",
+  "@pendingMovesMessage": {
+    "placeholders": {
+      "moves": {
+        "type": "String"
+      }
+    }
+  },
+  "stay": "Stay",
+  "textLooksWrong": "Text looks garbled? Change the encoding",
+  "undoMove": "Undo move",
+  "newMovesShort": "Not in the repertoire",
+  "builderAutoAddHint": "Moves you play here are added to the repertoire right away.",
+  "expand": "Expand",
+  "collapse": "Collapse",
+  "progressOf": "{done} of {total}",
+  "@progressOf": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "enterMove": "Type a move",
+  "enterMoveHint": "For example Nf3, e4, O-O",
+  "illegalMove": "This move is not possible here",
+  "whyMove": "Why {move}?",
+  "@whyMove": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewSaveFailed": "Could not save training progress. Check free storage space.",
+  "nothingDueHint": "Everything is reviewed. You can play all lines in a row or learn new moves.",
+  "goalReached": "Daily goal reached!",
+  "hintUsed": "With a hint",
+  "tapMoveForWhy": "Tap a move to see why it is played.",
+  "learnNewLines": "More new moves",
+  "reviewLimitReached": "Daily review limit reached. You can raise it in Settings.",
+  "limitDepth": "Limit depth",
+  "leaveImportQ": "Leave the import?",
+  "leaveImportMessage": "Nothing has been added yet. Your conflict choices will be lost.",
+  "importFailed": "Could not import: {error}",
+  "@importFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "previewShort": "{moves, plural, =0{No new moves} one{{moves} new move} other{{moves} new moves}} · conflicts: {conflicts}",
+  "@previewShort": {
+    "placeholders": {
+      "moves": {
+        "type": "int"
+      },
+      "conflicts": {
+        "type": "int"
+      }
+    }
+  },
+  "select": "Select",
+  "gamesDeleted": "{count, plural, one{{count} game deleted} other{{count} games deleted}}",
+  "@gamesDeleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chartMax": "max {value}",
+  "@chartMax": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "notation": "Move notation",
+  "notationSize": "Text size",
+  "sizeSmall": "Small",
+  "sizeNormal": "Normal",
+  "sizeLarge": "Large",
+  "notationLanguage": "Piece letters",
+  "notationEnglish": "English (N, B)",
+  "notationUkrainian": "Ukrainian (К, С)",
+  "notationFigurine": "Figurines",
+  "notationExportHint": "Only changes how moves are shown. Exported PGN always uses English letters.",
+  "advancedSettings": "Advanced",
+  "advancedTrainingHint": "Daily limits, alternative moves, answer time, opponent moves",
+  "advancedEngineHint": "Threads, memory, depth, error threshold",
+  "unlimited": "Unlimited",
+  "unitMs": "{value} ms",
+  "@unitMs": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "unitSec": "{value} s",
+  "@unitSec": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "unitMb": "{value} MB",
+  "@unitMb": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "unitPawns": "{value} pawns",
+  "@unitPawns": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "boardThemeBrown": "Brown",
+  "boardThemeBlue": "Blue",
+  "boardThemeGreen": "Green",
+  "boardThemeIc": "Light",
+  "boardThemeGrey": "Grey",
+  "boardThemePurple": "Purple",
+  "boardThemeTabiya": "Repertorium",
+  "disconnectChessComMessage": "Imported games stay in the library. You can connect the account again at any time.",
+  "gapDismissed": "Hidden from the report",
+  "castleWhiteShort": "White O-O",
+  "castleWhiteLong": "White O-O-O",
+  "castleBlackShort": "Black O-O",
+  "castleBlackLong": "Black O-O-O",
+  "outcomeWin": "Win",
+  "outcomeLoss": "Loss",
+  "outcomeDraw": "Draw",
+  "outcomeUnknown": "Result unknown",
+  "playedAs": "Played as {color}",
+  "@playedAs": {
+    "placeholders": {
+      "color": {
+        "type": "String"
+      }
+    }
+  },
+  "typographyPreview": "Typography preview",
+  "addShort": "Add",
+  "engineDepthDone": "Depth {depth} · done",
+  "@engineDepthDone": {
+    "placeholders": {
+      "depth": {
+        "type": "int"
+      }
+    }
+  },
+  "engineDeeper": "Deeper",
+  "engineOnDevice": "On device",
+  "engineCloudTry": "Lichess eval",
+  "enginePowerSaving": "Save battery",
+  "enginePowerSavingHint": "The engine stops at depth 20 or after 8 seconds and uses 2 threads. “Deeper” continues on demand.",
+  "engineCloudFirst": "Lichess cloud first",
+  "engineCloudFirstHint": "Ready evaluations of known positions from Lichess; the phone does not compute them.",
+  "navEngine": "Engine",
+  "navExplorer": "Explorer",
+  "navActions": "Actions",
+  "navBack": "Back",
+  "navNext": "Next",
+  "analysisShort": "Analysis",
+  "navLongPressHint": "Hold to jump to the start or the end",
+  "undoFailed": "Could not restore: the collection no longer exists.",
+  "backupTooNew": "This backup was made by a newer version of Repertorium chess. Update the app and try again.",
+  "lichessNoAccess": "Lichess did not allow access. Sign in again in Accounts.",
+  "speedUltraBullet": "UltraBullet",
+  "todayUpTo": "today up to {count}",
+  "@todayUpTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAction": "Open",
+  "studyFull": "This study already has 64 chapters (the Lichess limit). Choose another study or create a new one.",
+  "engineBest": "Best continuation",
+  "engineSourceTitle": "Where the evaluation comes from",
+  "engineSourceCloud": "Lichess cloud",
+  "engineSourcePhone": "This phone",
+  "engineSourceCloudHint": "Cached evaluations of known positions from Lichess. No local engine computation. Requires internet.",
+  "engineSourcePhoneHint": "Stockfish computes on this phone. Works offline and in any position, but warms the phone and uses the battery.",
+  "engineStatusCloud": "Lichess · depth {depth}",
+  "@engineStatusCloud": {
+    "placeholders": {
+      "depth": {
+        "type": "int"
+      }
+    }
+  },
+  "engineStatusPhone": "Phone · depth {depth}",
+  "@engineStatusPhone": {
+    "placeholders": {
+      "depth": {
+        "type": "int"
+      }
+    }
+  },
+  "engineStatusPhoneDone": "Phone · depth {depth} · done",
+  "@engineStatusPhoneDone": {
+    "placeholders": {
+      "depth": {
+        "type": "int"
+      }
+    }
+  },
+  "engineSourceHint": "Tap to see where the evaluation comes from",
+  "saveFailed": "Could not save changes. Please try again.",
+  "unsavedChanges": "Unsaved changes",
+  "editSquare": "Squares and pieces",
+  "editSquareHint": "Open the form to place, move or remove a piece",
+  "emptySquare": "Empty square",
+  "squareLabel": "Square",
+  "pieceLabel": "Piece",
+  "moveToSquare": "Move to",
+  "keepOnSquare": "Keep on this square",
+  "expandAll": "Expand all",
+  "treeOpponentShare": "{percent}% of opponent replies in training",
+  "@treeOpponentShare": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "engineNoMoves": "No moves in this position",
+  "gapsNoneTitle": "No deviations found",
+  "gapsNoneReached": "Games compared: {count}. None reached the start position of a repertoire of its colour, so there was nothing to compare. A repertoire that starts after a few moves only meets games that reach exactly that position.",
+  "@gapsNoneReached": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gapsAllInBook": "Games compared: {count}, {reached} reached a repertoire. None of them left it.",
+  "@gapsAllInBook": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "reached": {
+        "type": "int"
+      }
+    }
+  },
+  "gapsAnalyzedHint": "The compared games did not leave your repertoires, or did not reach them.",
+  "gapsNotAnalyzedTitle": "Games not compared yet",
+  "gapsNotAnalyzedHint": "Downloaded games: {count}. Compare them with your repertoires to see where you leave them.",
+  "@gapsNotAnalyzedHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "compareNow": "Compare",
+  "addLineQ": "Add these moves to the line?",
+  "dontAdd": "Don't add",
+  "toLineOf": "To the repertoire “{name}”",
+  "@toLineOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "analysisLineHint": "Make moves on the board or take an engine line, then tap Add",
+  "lineAlreadyInRepertoire": "These moves are already in the repertoire",
+  "hideVariation": "Fold the variation",
+  "foldedVariation": "Variation {moves}, {count, plural, =0{no more moves} one{{count} more move} other{{count} more moves}}. Tap to open",
+  "@foldedVariation": {
+    "placeholders": {
+      "moves": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "expandAllVariations": "Open all variations",
+  "collapseAllVariations": "Fold all variations",
+  "toRepertoireSection": "Learn: add to a repertoire",
+  "addThisLine": "This line",
+  "addFromHereWithVariations": "From here, with all variations",
+  "addWholeGame": "The whole game with variations",
+  "learnNow": "Learn",
+  "goalLeft": "{count, plural, one{{count} more to today's goal} other{{count} more to today's goal}}",
+  "@goalLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalDone": "Daily goal reached!",
+  "weekActivity": "This week: {days}",
+  "@weekActivity": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "readingMode": "Reading mode: smaller board",
+  "normalBoard": "Full-size board",
+  "boardSize": "Board size",
+  "boardSizeHint": "Drag to resize, double-tap to switch",
+  "percentValue": "{value} %",
+  "@percentValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "myOpeningsTitle": "My openings",
+  "myOpeningsSubtitle": "Which variations you meet in your games and how often",
+  "asWhite": "As White",
+  "asBlack": "As Black",
+  "tabVariations": "Variations",
+  "upToMove": "to move {n}",
+  "@upToMove": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "myOpeningsEmpty": "No games of yours yet",
+  "myOpeningsEmptyHint": "Download your games from Lichess or Chess.com: the statistics are built from them.",
+  "fitInBook": "In your repertoire",
+  "fitUserLeft": "You left the repertoire: {move}",
+  "@fitUserLeft": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "fitOpponentLeft": "Not in the repertoire: {move}",
+  "@fitOpponentLeft": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "compareWith": "Repertoire: {name}",
+  "@compareWith": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noCompare": "No repertoire",
+  "outOfBookHere": "This position is outside the repertoire",
+  "scoreLine": "+{w} ={d} −{l}",
+  "@scoreLine": {
+    "placeholders": {
+      "w": {
+        "type": "int"
+      },
+      "d": {
+        "type": "int"
+      },
+      "l": {
+        "type": "int"
+      }
+    }
+  },
+  "moveNotInRep": "not your repertoire move",
+  "moveGap": "no answer in the repertoire",
+  "explorerMine": "My games",
+  "explorerMineEmpty": "This position did not occur in your games",
+  "variationsShare": "{share} of games",
+  "@variationsShare": {
+    "placeholders": {
+      "share": {
+        "type": "String"
+      }
+    }
+  },
+  "minutesShort": "{m} min",
+  "@minutesShort": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "daysPerMove": "{count, plural, one{{count} day} other{{count} days}}",
+  "@daysPerMove": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editImportText": "Edit text",
+  "positionDetails": "Moves",
+  "engineLocalModel": "Local engine",
+  "engineLightHint": "Built in. Works offline immediately.",
+  "engineFullHint": "More accurate analysis. Download about 94 MB once, then use offline.",
+  "engineNetworkReady": "Downloaded. Available offline.",
+  "engineNetworkChecking": "Checking downloaded engine data…",
+  "engineNetworkVerifying": "Verifying the download…",
+  "engineNetworkFailed": "Could not download or verify the engine data. Try again.",
+  "engineNetworkRequired": "Download the full engine data or choose Stockfish 19 Light.",
+  "engineNetworkDelete": "Remove full engine data",
+  "engineNetworkDeleteHint": "Stockfish 19 Light will remain available.",
+  "enginePositionUnsupported": "This position cannot be analysed by Stockfish 19. Check the pieces in the board editor.",
+  "engineDownloadFull": "Download and use",
+  "engineVariations": "Candidate lines",
+  "finishSession": "Finish",
+  "lineNumber": "Line {number}",
+  "@lineNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteRepertoireNoHistory": "{positions, plural, one{{positions} position} other{{positions} positions}} will be deleted.",
+  "@deleteRepertoireNoHistory": {
+    "placeholders": {
+      "positions": {
+        "type": "int"
+      }
+    }
+  },
+  "repertoireDeleted": "Repertoire deleted",
+  "moveDeleted": "Move {san} deleted",
+  "@moveDeleted": {
+    "placeholders": {
+      "san": {
+        "type": "String"
+      }
+    }
+  },
+  "branchPaused": "Training of this branch is paused",
+  "nameOptional": "Name (optional)",
+  "coverageFailed": "Could not check the coverage. Check the connection and try again.",
+  "issueIllegalMove": "Illegal or unreadable move",
+  "issueUnreadKept": "Unread moves are kept in a comment",
+  "issueUnsupportedVariant": "Unsupported variant",
+  "issueInvalidFen": "Invalid FEN header",
+  "issueMalformedHeader": "Malformed header",
+  "issueUnterminatedHeader": "Unterminated header",
+  "issueVariationWithoutMove": "Variation without a preceding move",
+  "issueUnbalancedParen": "Unbalanced \")\"",
+  "issueUnclosedVariation": "Unclosed variation",
+  "issueUnterminatedComment": "Unterminated comment",
+  "unreadMovesKept": "The moves after the error are kept in a comment.",
+  "gamesAlreadyThere": "{count, plural, one{{count} game was already in the collection} other{{count} games were already in the collection}}",
+  "@gamesAlreadyThere": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "leaveImportSavedMessage": "The games are already saved in the library. Nothing has been added to the repertoire.",
+  "leaveImportConfirm": "Leave",
+  "leaveImportStay": "Continue the import",
+  "closeSearch": "Close search",
+  "fullMovesCount": "{count, plural, one{{count} move} other{{count} moves}}",
+  "@fullMovesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "setupEmptyBoard": "The board is empty: add the kings of both sides",
+  "leavePositionQ": "Leave the editor?",
+  "leavePositionMessage": "The position you set up will be lost.",
+  "saveFailedLeave": "The last changes could not be saved. You can try again, copy the game or leave without them.",
+  "leaveWithoutSaving": "Leave without saving",
+  "copyPgn": "Copy PGN",
+  "cloudMissingHint": "This position is not in the Lichess cloud, so the phone calculates it.",
+  "loginFailedGeneric": "Could not sign in to Lichess. Check the connection and try again.",
+  "openSystemSettings": "Open settings",
+  "restoreMergeHint": "Merge adds only what is not on this device yet. Replace deletes everything here first.",
+  "restoreNothingNew": "Everything from this backup is already here",
+  "restoreMerged": "Added: {added}. Already here: {skipped}",
+  "@restoreMerged": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "gameUnreadKept": "Some moves of this game could not be read. They are kept in the comment marked [?].",
+  "trainNow": "Train",
+  "otherModes": "Other modes",
+  "nextStage": "Next: {mode}",
+  "@nextStage": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "stageReviewCount": "{count, plural, one{{count} to review} other{{count} to review}}",
+  "@stageReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stageProblemsCount": "{count, plural, one{{count} frequent mistake} other{{count} frequent mistakes}}",
+  "@stageProblemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stageNewCount": "{count, plural, one{{count} new} other{{count} new}}",
+  "@stageNewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timedGrading": "Take the answer time into account",
+  "timedGradingHint": "A slow answer comes back sooner, a fast one later",
+  "editRepertoire": "Edit",
+  "editingMode": "Editing",
+  "moveAddedShort": "Move added",
+  "importRead": "Read",
+  "importReadTo": "Save to the library: {name}",
+  "@importReadTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importLearn": "Learn",
+  "importLearnTo": "Add to the repertoire: {name}",
+  "@importLearnTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importLearnNew": "Add to a new repertoire",
+  "change": "Change",
+  "movesAddedTo": "{count, plural, =0{Added to {name}: only opponent moves} one{{count} move of yours added to {name}} other{{count} moves of yours added to {name}}}",
+  "@movesAddedTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "learnNowLong": "Learn them now",
+  "pasteText": "Paste text",
+  "pasteTextHint": "PGN or FEN from the clipboard, or type it in",
+  "importOptions": "Import options",
+  "importOptionsHint": "Variations, depth, comments, arrows",
+  "moreYourGames": "Your games",
+  "moreTools": "Tools",
+  "moreApp": "App",
+  "myGamesSubtitle": "Download, your openings, differences from the repertoire",
+  "tabGames": "Games",
+  "tabOpenings": "Openings",
+  "tabGaps": "Differences",
+  "gapSectionForgot": "You forgot your move",
+  "gapSectionNovelty": "The opponent played something new",
+  "gapSectionEnd": "The line ended",
+  "gapSectionOther": "Another opening",
+  "gapOtherOpening": "No repertoire for this opening",
+  "gapOtherText": "You started with {played}; your repertoire begins differently",
+  "@gapOtherText": {
+    "placeholders": {
+      "played": {
+        "type": "String"
+      }
+    }
+  },
+  "gamesCountShort": "{count, plural, one{{count} game} other{{count} games}}",
+  "@gamesCountShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "startWithStarter": "Start with a ready-made repertoire",
+  "advancedIntegrationsHint": "Opening explorer filters, coverage threshold, cache",
+  "dontShowAgain": "Do not show again",
+  "importLearnChoose": "Choose a repertoire",
+  "importLearnChecking": "Looking for a repertoire…",
+  "orTakeStarter": "Or take a ready-made repertoire",
+  "newShort": "New",
+  "importShort": "Import",
+  "trainFromHereLong": "Train from here",
+  "arrowsShort": "Arrows"
+}

@@ -1,0 +1,21 @@
+[Event "En passant and promotion"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "?"]
+[Black "?"]
+[Result "*"]
+
+1. e4 Nf6 2. e5 d5 3. exd6 exd6 4. d4 Be7 5. c4 O-O 6. c5 b5 7. cxb6 axb6 8. Nf3 Re8 9. Be2 Bf8 10. O-O *
+
+[Event "Promotion"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "?"]
+[Black "?"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/P6k/8/8/8/8/6pK/7R w - - 0 1"]
+
+1. a8=Q gxh1=Q+ (1... g1Q+ 2. Kxg1) 2. Kxh1 *

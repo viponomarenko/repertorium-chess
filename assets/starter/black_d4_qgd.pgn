@@ -1,0 +1,22 @@
+[Event "Black vs 1.d4: Queen's Gambit Declined"]
+[Site "Tabiya"]
+[Date "????.??.??"]
+[Round "?"]
+[White "?"]
+[Black "Tabiya"]
+[Result "*"]
+[Annotator "Tabiya (demo, CC0)"]
+
+1. d4 d5 {Classical answer: claim the centre. / Класична відповідь: боротьба за центр.}
+2. c4
+( 2. Bf4 Nf6 3. e3 c5 {Strike the centre before White sets up c3. / Удар по центру, поки білі не зіграли c3.} 4. c3 Nc6 5. Nd2 e6 )
+( 2. Nf3 Nf6 3. c4 e6 4. Nc3 Be7 5. Bg5 O-O )
+2... e6 {Solid: support d5, open the f8 bishop. / Надійно: підтримуємо d5, відкриваємо слона f8.}
+3. Nc3
+( 3. Nf3 Nf6 4. Nc3 Be7 5. Bg5 O-O )
+( 3. g3 Nf6 4. Bg2 Be7 5. Nf3 O-O {Catalan: castle first, then decide. / Каталонський: спершу рокіровка.} )
+( 3. cxd5 exd5 4. Nc3 Nf6 5. Bg5 Be7 )
+3... Nf6 4. Bg5
+( 4. cxd5 exd5 5. Bg5 Be7 )
+( 4. Nf3 Be7 5. Bg5 O-O )
+4... Be7 {Break the pin. / Знімаємо зв'язку.} 5. e3 O-O 6. Nf3 h6 {Ask the bishop. / Ставимо питання слону.} *

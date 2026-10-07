@@ -1,0 +1,77 @@
+Repertorium chess — chess opening trainer
+Copyright (C) 2026 Repertorium chess contributors
+Licensed under the GNU General Public License v3.0 (see LICENSE).
+
+This product includes third-party software and assets:
+
+CODE
+- Stockfish 19 and Stockfish 19 Light (via multistockfish, lichess-org/dart-multistockfish) - GPL-3.0
+  https://stockfishchess.org, embedded Light NNUE and optional full NNUE
+  Native source: https://github.com/lichess-org/dart-multistockfish/tree/896c3884921ae1d775fcd3088ddcd1559fb87308
+  Light network: nn-61e7af4bb97d.nnue; full network: nn-1a298aa575a0.nnue
+- dartchess (lichess-org/dartchess) — GPL-3.0
+- chessground (lichess-org/flutter-chessground) — GPL-3.0
+- Flutter, Dart SDK — BSD-3-Clause
+- drift, sqlite3 (Simon Binder) — MIT; SQLite — public domain
+- flutter_riverpod, riverpod — MIT
+- go_router, http, path_provider, url_launcher, package_info_plus, share_plus,
+  flutter_localizations, intl, collection, path — BSD-3-Clause
+- flutter_appauth (MaikuB) — BSD-3-Clause; AppAuth-iOS / AppAuth-Android — Apache-2.0
+- flutter_secure_storage — BSD-3-Clause
+- file_picker — MIT
+- archive — MIT
+- audioplayers — MIT
+- wakelock_plus — BSD-3-Clause
+- flutter_local_notifications — BSD-3-Clause
+- timezone — BSD-2-Clause; flutter_timezone — Apache-2.0
+- fast_immutable_collections — BSD-2-Clause
+
+ALGORITHMS
+- FSRS (Free Spaced Repetition Scheduler) — own Dart implementation following
+  the open-spaced-repetition reference (MIT).
+
+DATA
+- Opening names and ECO codes: lichess-org/chess-openings — CC0-1.0
+  https://github.com/lichess-org/chess-openings
+
+PIECE SETS offered in the app (bundled by chessground; licenses per
+lichess-org/lila COPYING.md):
+- cburnett (Colin M.L. Burnett) — GPL-2.0-or-later
+- merida (Armando Hernandez Marroquin) — GPL-2.0-or-later
+- mpchess — GPL-3.0-or-later
+- chessnut (Alexis Luengas) — Apache-2.0
+- fantasy, spatial, celtic (Maurizio Monge) — MIT
+- rhosgfx (Ross Hopkins) — CC0-1.0
+- firi — CC BY 4.0
+- shapes — CC BY-SA 4.0
+Note: the chessground package also contains other piece sets and board images
+under their own licenses (some non-commercial or AGPL). They are not selectable
+in Repertorium chess and are distributed only as part of the unmodified package
+(mere aggregation). See docs/DECISIONS.md, D-015.
+
+FONTS (assets/fonts, each with its OFL.txt)
+- Google Sans and Google Sans Code (The Google Sans Project Authors) - SIL
+  Open Font License 1.1. Variable TTFs from github.com/google/fonts,
+  unmodified. "Google Sans" is a trademark of Google LLC; no affiliation with
+  or endorsement by Google is implied.
+- TabiyaSymbols: a subset of Noto Sans Math (Google LLC) with evaluation and
+  arrow symbols (± ∓ ⩲ ⩱ ∞ ⨀ ⟳ ⇆ ...), renamed as required for modified
+  versions; SIL Open Font License 1.1. Noto Sans Math declares no Reserved
+  Font Name. Build script: tool/fonts/build_symbols.py.
+
+BOARD COLORS
+- Solid color schemes from chessground (GPL-3.0) and own color schemes.
+
+ICONS
+- Bootstrap Icons 1.13 (https://icons.getbootstrap.com), MIT, via the
+  bootstrap_icons package (MIT, Ricardo Dalarme).
+
+SOUNDS
+- assets/sounds/*.wav — sounds supplied by the Repertorium chess author (move, capture,
+  correct move, mistake, line completed); leading silence trimmed, tails
+  faded, converted to 44.1 kHz mono WAV.
+
+STARTER REPERTOIRES
+- assets/starter/*.pgn — demo content by Repertorium chess contributors, CC0-1.0.
+
+Repertorium chess is not affiliated with Lichess or Chess.com.

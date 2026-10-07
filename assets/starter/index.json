@@ -1,0 +1,28 @@
+[
+  {
+    "id": "white-e4-basics",
+    "file": "white_e4_basics.pgn",
+    "color": "white",
+    "level": "beginner",
+    "author": "Tabiya (demo)",
+    "license": "CC0-1.0",
+    "name": {"uk": "Білі: основи 1.e4", "en": "White: 1.e4 basics"},
+    "description": {
+      "uk": "Демо-репертуар: популярні відповіді на 1...e5, 1...c5, 1...e6, 1...c6 до 8-10 напівходів.",
+      "en": "Demo repertoire: popular answers to 1...e5, 1...c5, 1...e6, 1...c6, 8-10 plies deep."
+    }
+  },
+  {
+    "id": "black-d4-qgd",
+    "file": "black_d4_qgd.pgn",
+    "color": "black",
+    "level": "beginner",
+    "author": "Tabiya (demo)",
+    "license": "CC0-1.0",
+    "name": {"uk": "Чорні проти 1.d4: ферзевий гамбіт відхилений", "en": "Black vs 1.d4: Queen's Gambit Declined"},
+    "description": {
+      "uk": "Демо-репертуар: 1...d5 і 2...e6 проти головних систем білих, включно з лондонською.",
+      "en": "Demo repertoire: 1...d5 and 2...e6 against White's main systems, including the London."
+    }
+  }
+]
