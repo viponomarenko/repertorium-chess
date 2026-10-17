@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,36 +45,44 @@ class OnboardingScreen extends ConsumerWidget {
     );
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _width),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.page,
-                AppSpacing.xl,
-                AppSpacing.page,
-                AppSpacing.listBottom,
+        // In the middle of a tall screen (a tablet), from the top when the
+        // page is longer than the screen.
+        child: LayoutBuilder(
+          builder: (context, box) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.page,
+              AppSpacing.xl,
+              AppSpacing.page,
+              AppSpacing.listBottom,
+            ).inPage(context, width: _width),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: math.max(0, box.maxHeight - AppSpacing.xl - AppSpacing.listBottom),
               ),
-              children: [
-                const Center(child: AppLogo(size: _logoSize)),
-                AppGap.v16,
-                Text(AppInfo.name, textAlign: TextAlign.center, style: theme.textTheme.displaySmall),
-                AppGap.v8,
-                Text(l.tagline, textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
-                AppGap.v24,
-                feature(AppIcons.repertoire, l.onbRepTitle, l.onbRepText),
-                feature(AppIcons.hint, l.onbTrainTitle, l.onbTrainText),
-                feature(AppIcons.openings, l.onbPgnTitle, l.onbPgnText),
-                feature(AppIcons.cloudOff, l.onbOfflineTitle, l.onbOfflineText),
-                AppGap.v24,
-                Text(l.language, style: context.tt.title),
-                AppGap.v8,
-                ChoiceSegments<String>(
-                  options: const [ChoiceOption('uk', 'Українська'), ChoiceOption('en', 'English')],
-                  selected: lang == 'uk' ? 'uk' : 'en',
-                  onChanged: (v) => ref.read(settingsProvider.notifier).update((x) => x.copyWith(localeCode: v)),
-                ),
-              ],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(child: AppLogo(size: _logoSize)),
+                  AppGap.v16,
+                  Text(AppInfo.name, textAlign: TextAlign.center, style: theme.textTheme.displaySmall),
+                  AppGap.v8,
+                  Text(l.tagline, textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
+                  AppGap.v24,
+                  feature(AppIcons.repertoire, l.onbRepTitle, l.onbRepText),
+                  feature(AppIcons.hint, l.onbTrainTitle, l.onbTrainText),
+                  feature(AppIcons.openings, l.onbPgnTitle, l.onbPgnText),
+                  feature(AppIcons.cloudOff, l.onbOfflineTitle, l.onbOfflineText),
+                  AppGap.v24,
+                  Text(l.language, style: context.tt.title),
+                  AppGap.v8,
+                  ChoiceSegments<String>(
+                    options: const [ChoiceOption('uk', 'Українська'), ChoiceOption('en', 'English')],
+                    selected: lang == 'uk' ? 'uk' : 'en',
+                    onChanged: (v) => ref.read(settingsProvider.notifier).update((x) => x.copyWith(localeCode: v)),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

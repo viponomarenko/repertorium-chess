@@ -582,11 +582,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
     final keys = [e.startKey, for (final m in e.line) positionKeyOf(positionFromFen(m.fenBefore))];
     final opening = book?.deepest(keys);
     await _pausingClock(
-      () => showModalBottomSheet<void>(
-        context: context,
-        useRootNavigator: true,
-        showDragHandle: true,
-        isScrollControlled: true,
+      () => showAppModal<void>(
+        context,
         builder: (ctx) => _WhySheet(move: last, openingName: opening == null ? null : '${opening.eco} ${opening.name}'),
       ),
     );

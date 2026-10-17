@@ -49,10 +49,8 @@ Future<void> showExportSheet(
   final l = context.l10n;
   final bytes = Uint8List.fromList(utf8.encode(text));
   final fileName = safeFileName(baseName, ext);
-  await showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    showDragHandle: true,
+  await showAppModal<void>(
+    context,
     builder: (ctx) => SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,

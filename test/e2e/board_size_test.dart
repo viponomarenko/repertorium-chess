@@ -25,7 +25,7 @@ void main() {
           // is tall enough, a little less under the tab bar.
           expect(board, lessThanOrEqualTo(size.width));
           expect(board, greaterThan(size.width * 0.6));
-          for (final tool in ['Тренувати', 'Аналіз']) {
+          for (final tool in ['Звідси', 'Аналіз']) {
             expect(find.text(tool).hitTestable(), findsOneWidget, reason: '$tool must be visible');
           }
           // And at least two rows of moves between the board and the tools.

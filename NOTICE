@@ -50,10 +50,12 @@ in Repertorium chess and are distributed only as part of the unmodified package
 (mere aggregation). See docs/DECISIONS.md, D-015.
 
 FONTS (assets/fonts, each with its OFL.txt)
-- Google Sans and Google Sans Code (The Google Sans Project Authors) - SIL
-  Open Font License 1.1. Variable TTFs from github.com/google/fonts,
-  unmodified. "Google Sans" is a trademark of Google LLC; no affiliation with
-  or endorsement by Google is implied.
+- Exo 2 (The Exo 2 Project Authors) - SIL Open Font License 1.1. Variable
+  TTF from github.com/google/fonts, unmodified; no Reserved Font Name.
+- Google Sans Code (The Google Sans Code Project Authors) - SIL Open Font
+  License 1.1. Variable TTF from github.com/google/fonts, unmodified.
+  "Google Sans" is a trademark of Google LLC; no affiliation with or
+  endorsement by Google is implied.
 - TabiyaSymbols: a subset of Noto Sans Math (Google LLC) with evaluation and
   arrow symbols (± ∓ ⩲ ⩱ ∞ ⨀ ⟳ ⇆ ...), renamed as required for modified
   versions; SIL Open Font License 1.1. Noto Sans Math declares no Reserved

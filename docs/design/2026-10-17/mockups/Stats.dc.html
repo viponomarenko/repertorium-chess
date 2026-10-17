@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Статистика</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#3A3A3C}
+button{font-family:inherit;border:0;margin:0;cursor:pointer}
+.fs{flex:1;display:flex;justify-content:center}
+.col{flex:1;height:87px;padding:0;background:transparent;display:flex;flex-direction:column-reverse;align-items:center;gap:3px;transition:opacity .15s}
+.col.dim{opacity:.3}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.dk{background:#111111}
+.dt{background:#111111}
+.dg{background:#AEAEB2}
+.de{background:#EFEFF3}
+.cw{flex:1;padding:0 2px}
+.cc{height:32px;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:14px;font-weight:600;color:#111111}
+.cz{background:#F2F2F7;color:#5E5E63;font-weight:400}
+</style>
+</helmet>
+<div style="width: 402px; height: 1540px; position: relative; overflow: hidden; background: #F2F2F7; color: #111111; font-family: 'Exo 2', sans-serif; font-variant-numeric: tabular-nums; display: flex; flex-direction: column">
+
+<div style="height: 62px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 32px 0 50px; box-sizing: border-box; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif">
+<span style="font-size: 17px; font-weight: 600; letter-spacing: -0.2px; padding-top: 4px">9:41</span>
+<span style="display: flex; align-items: center; gap: 7px; padding-top: 4px" aria-hidden="true">
+<svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#111111"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#111111"></rect><rect x="10" y="3" width="3" height="9" rx="1" fill="#111111"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="#111111"></rect></svg>
+<svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2.3c2.4 0 4.6.9 6.3 2.5l1.2-1.2C14 1.6 11.4.5 8.5.5S3 1.6 1 3.6l1.2 1.2C3.9 3.2 6.1 2.3 8.5 2.3zm0 3.4c1.5 0 2.8.5 3.9 1.5l1.2-1.2c-1.4-1.3-3.2-2-5.1-2s-3.700.7-5.1 2l1.2 1.2c1.1-1 2.4-1.5 3.9-1.5zm0 3.4c-.7 0-1.300.3-1.8.7l1.8 1.8 1.8-1.8c-.5-.4-1.100-.7-1.8-.7z" fill="#111111"></path></svg>
+<svg width="27" height="13" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="23" height="12" rx="3.8" fill="none" stroke="#111111" stroke-opacity="0.4"></rect><rect x="2" y="2" width="20" height="9" rx="2.4" fill="#111111"></rect><path d="M25 4.3v4.4c.9-.3 1.5-1.2 1.5-2.2s-.6-1.9-1.5-2.2z" fill="#111111" fill-opacity="0.45"></path></svg>
+</span>
+</div>
+
+<div style="height: 56px; flex: none; display: flex; align-items: center">
+<button aria-label="Назад" style="width: 48px; height: 48px; margin: 0 4px; display: flex; align-items: center; justify-content: center; background: transparent; color: #111111; border-radius: 24px">
+<svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"></path></svg>
+</button>
+<h1 style="margin: 0 0 0 16px; font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -0.1px">Статистика</h1>
+</div>
+
+<div style="padding: 8px 16px 24px; display: flex; flex-direction: column; gap: 12px">
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 16px; display: flex; flex-direction: column">
+<div style="display: flex; align-items: flex-end; gap: 12px">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.6px; color: #5E5E63">ВИВЧЕНО</span>
+<span style="margin-top: 4px; font-size: 52px; line-height: 52px; font-weight: 700; letter-spacing: -1.5px">73%</span>
+<span style="margin-top: 6px; font-size: 14px; line-height: 20px; font-weight: 600">53 з 73 ходів</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; padding-bottom: 2px">
+<span style="height: 28px; padding: 0 10px 0 4px; border-radius: 14px; background: #F2F2F7; display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-weight: 600" aria-label="Білі: вивчено 31 з 48">
+<span style="width: 20px; height: 20px; box-sizing: border-box; border-radius: 10px; background: #F2F2F2; border: 1px solid #C7C7CC; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 45 45" aria-hidden="true"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path stroke-linejoin="miter" d="M22.5 11.63V6M20 8h5"></path><path fill="#fff" stroke-linecap="butt" stroke-linejoin="miter" d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"></path><path fill="#fff" d="M12.5 37c5.5 3.5 14.5 3.5 20 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-2.5-7.5-12-10.5-16-4-3 6 6 10.5 6 10.5z"></path><path d="M12.5 30c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0"></path></g></svg></span>
+31 / 48
+</span>
+<span style="height: 28px; padding: 0 10px 0 4px; border-radius: 14px; background: #F2F2F7; display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-weight: 600" aria-label="Чорні: вивчено 22 з 25">
+<span style="width: 20px; height: 20px; box-sizing: border-box; border-radius: 10px; background: #333333; border: 1px solid #C7C7CC; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 45 45" aria-hidden="true"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path stroke-linejoin="miter" d="M22.5 11.63V6"></path><path fill="#000" stroke-linecap="butt" stroke-linejoin="miter" d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"></path><path fill="#000" d="M12.5 37c5.5 3.5 14.5 3.5 20 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-2.5-7.5-12-10.5-16-4-3 6 6 10.5 6 10.5z"></path><path stroke-linejoin="miter" d="M20 8h5"></path><path stroke="#fff" d="M32 29.5s8.5-4 6.03-9.65C34.15 14 25 18 22.5 24.5v2.1-2.1C20 18 10.850 14 6.97 19.85 4.5 25.5 13 29.5 13 29.5"></path><path stroke="#fff" d="M12.5 30c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0"></path></g></svg></span>
+22 / 25
+</span>
+</div>
+</div>
+<div style="margin-top: 14px; height: 10px; border-radius: 5px; background: #E9E9EE; overflow: hidden"><div style="width: 72.6%; height: 10px; border-radius: 5px; background: #111111"></div></div>
+<div style="margin-top: 16px; display: flex; gap: 8px">
+<div style="flex: 1; min-width: 0; padding: 12px; border-radius: 14px; background: #F2F2F7; display: flex; flex-direction: column">
+<svg width="18" height="18" viewBox="0 0 16 16" fill="#111111" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5.5A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z"></path></svg>
+<span style="margin-top: 8px; font-size: 22px; line-height: 26px; font-weight: 700; letter-spacing: -0.4px">64</span>
+<span style="font-size: 12px; line-height: 16px; color: #5E5E63">позицій у репертуарі</span>
+</div>
+<div style="flex: 1; min-width: 0; padding: 12px; border-radius: 14px; background: #F2F2F7; display: flex; flex-direction: column">
+<svg width="18" height="18" viewBox="0 0 16 16" fill="#111111" aria-hidden="true"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41m-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9"></path><path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5 5 0 0 0 8 3M3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9z"></path></svg>
+<span style="margin-top: 8px; font-size: 22px; line-height: 26px; font-weight: 700; letter-spacing: -0.4px">8</span>
+<span style="font-size: 12px; line-height: 16px; color: #5E5E63">до повторення</span>
+</div>
+<div style="flex: 1; min-width: 0; padding: 12px; border-radius: 14px; background: #FDEEE4; display: flex; flex-direction: column">
+<svg width="18" height="18" viewBox="0 0 16 16" fill="#F26B1D" aria-hidden="true"><path d="M8 16c3.314 0 6-2 6-5.5 0-1.5-.5-4-2.5-6 .25 1.5-1.25 2-1.25 2C11 4 9 .5 6 0c.357 2 .5 4-2 6-1.25 1-2 2.729-2 4.5C2 14 4.686 16 8 16m0-1c-1.657 0-3-1-3-2.75 0-.75.25-2 1.25-3C6.125 10 7 10.5 7 10.5c-.375-1.25.5-3.250 2-3.5-.179 1-.25 2 1 3 .625.5 1 1.364 1 2.25C11 14 9.657 15 8 15"></path></svg>
+<span style="margin-top: 8px; font-size: 22px; line-height: 26px; font-weight: 700; letter-spacing: -0.4px">6</span>
+<span style="font-size: 12px; line-height: 16px; color: #5E5E63">днів поспіль</span>
+</div>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 16px; display: flex; flex-direction: column">
+<div style="display: flex; align-items: flex-start; gap: 12px">
+<div style="flex: 1; min-width: 0">
+<h2 style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -0.1px">Прогноз повторень</h2>
+<div style="margin-top: 4px; font-size: 12px; line-height: 16px; color: #5E5E63">Сьогодні 8 · у середньому 3,2 на день</div>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end">
+<span style="font-size: 28px; line-height: 30px; font-weight: 700; letter-spacing: -0.6px">44</span>
+<span style="font-size: 12px; line-height: 16px; color: #5E5E63">за 7 днів</span>
+</div>
+</div>
+<svg style="margin-top: 14px; display: block" width="338" height="144" viewBox="0 0 338 144" font-family="'Exo 2', sans-serif" role="img" aria-label="Прогноз повторень на 30 днів: сьогодні 8, за 7 днів 44, найбільше 9 у суботу 24 жовтня, у середньому 3,2 на день">
+<rect x="17" y="8" width="88" height="116" rx="10" fill="#F4F4F7"></rect>
+<g stroke="#EAEAEE" stroke-width="1">
+<line x1="18" y1="26" x2="338" y2="26"></line>
+<line x1="18" y1="56.7" x2="338" y2="56.7"></line>
+<line x1="18" y1="87.3" x2="338" y2="87.3"></line>
+</g>
+<line x1="18" y1="118" x2="338" y2="118" stroke="#D8D8DD" stroke-width="1"></line>
+<g font-size="10" fill="#6C6C70">
+<text x="0" y="29.5">9</text>
+<text x="0" y="60.2">6</text>
+<text x="0" y="90.8">3</text>
+<text x="0" y="121.5">0</text>
+</g>
+<g stroke="#111111" stroke-opacity="0.22" stroke-width="2" stroke-linecap="round">
+<line x1="26" y1="118" x2="26" y2="36.2"></line>
+<line x1="36.2" y1="118" x2="36.2" y2="77.1"></line>
+<line x1="46.4" y1="118" x2="46.4" y2="56.7"></line>
+<line x1="56.6" y1="118" x2="56.6" y2="87.3"></line>
+<line x1="66.8" y1="118" x2="66.8" y2="46.4"></line>
+<line x1="77" y1="118" x2="77" y2="97.6"></line>
+<line x1="87.2" y1="118" x2="87.2" y2="66.9"></line>
+<line x1="97.4" y1="118" x2="97.4" y2="26"></line>
+</g>
+<g stroke="#E3E3E8" stroke-width="2" stroke-linecap="round">
+<line x1="107.6" y1="118" x2="107.6" y2="87.3"></line>
+<line x1="117.8" y1="118" x2="117.8" y2="107.8"></line>
+<line x1="128" y1="118" x2="128" y2="77.1"></line>
+<line x1="138.2" y1="118" x2="138.2" y2="56.7"></line>
+<line x1="148.4" y1="118" x2="148.4" y2="97.6"></line>
+<line x1="168.8" y1="118" x2="168.8" y2="87.3"></line>
+<line x1="179" y1="118" x2="179" y2="66.9"></line>
+<line x1="189.2" y1="118" x2="189.2" y2="107.8"></line>
+<line x1="199.4" y1="118" x2="199.4" y2="97.6"></line>
+<line x1="209.6" y1="118" x2="209.6" y2="77.1"></line>
+<line x1="230" y1="118" x2="230" y2="87.3"></line>
+<line x1="240.2" y1="118" x2="240.2" y2="56.7"></line>
+<line x1="250.4" y1="118" x2="250.4" y2="107.8"></line>
+<line x1="270.8" y1="118" x2="270.8" y2="97.6"></line>
+<line x1="281" y1="118" x2="281" y2="87.3"></line>
+<line x1="291.2" y1="118" x2="291.2" y2="107.8"></line>
+<line x1="311.6" y1="118" x2="311.6" y2="97.6"></line>
+<line x1="321.8" y1="118" x2="321.8" y2="107.8"></line>
+<line x1="332" y1="118" x2="332" y2="77.1"></line>
+</g>
+<g fill="#111111">
+<circle cx="36.2" cy="77.1" r="3.5"></circle>
+<circle cx="46.4" cy="56.7" r="3.5"></circle>
+<circle cx="56.6" cy="87.3" r="3.5"></circle>
+<circle cx="66.8" cy="46.4" r="3.5"></circle>
+<circle cx="77" cy="97.6" r="3.5"></circle>
+<circle cx="87.2" cy="66.9" r="3.5"></circle>
+<circle cx="97.4" cy="26" r="3.5"></circle>
+</g>
+<g fill="#FFFFFF" stroke="#8E8E93" stroke-width="1.5">
+<circle cx="107.6" cy="87.3" r="3.25"></circle>
+<circle cx="117.8" cy="107.8" r="3.25"></circle>
+<circle cx="128" cy="77.1" r="3.25"></circle>
+<circle cx="138.2" cy="56.7" r="3.25"></circle>
+<circle cx="148.4" cy="97.6" r="3.25"></circle>
+<circle cx="168.8" cy="87.3" r="3.25"></circle>
+<circle cx="179" cy="66.9" r="3.25"></circle>
+<circle cx="189.2" cy="107.8" r="3.25"></circle>
+<circle cx="199.4" cy="97.6" r="3.25"></circle>
+<circle cx="209.6" cy="77.1" r="3.25"></circle>
+<circle cx="230" cy="87.3" r="3.25"></circle>
+<circle cx="240.2" cy="56.7" r="3.25"></circle>
+<circle cx="250.4" cy="107.8" r="3.25"></circle>
+<circle cx="270.8" cy="97.6" r="3.25"></circle>
+<circle cx="281" cy="87.3" r="3.25"></circle>
+<circle cx="291.2" cy="107.8" r="3.25"></circle>
+<circle cx="311.6" cy="97.6" r="3.25"></circle>
+<circle cx="321.8" cy="107.8" r="3.25"></circle>
+<circle cx="332" cy="77.1" r="3.25"></circle>
+</g>
+<g fill="#C7C7CC">
+<circle cx="158.6" cy="118" r="2"></circle>
+<circle cx="219.8" cy="118" r="2"></circle>
+<circle cx="260.6" cy="118" r="2"></circle>
+<circle cx="301.4" cy="118" r="2"></circle>
+</g>
+<circle cx="26" cy="36.2" r="5.5" fill="#111111" stroke="#FFFFFF" stroke-width="2"></circle>
+<text x="26" y="25" font-size="11" font-weight="600" fill="#111111" text-anchor="middle">8</text>
+<text x="97.4" y="17" font-size="11" font-weight="600" fill="#111111" text-anchor="middle">9</text>
+<g font-size="12" fill="#5E5E63">
+<text x="17" y="140" fill="#111111" font-weight="600">сьогодні</text>
+<text x="107.6" y="140" text-anchor="middle">25 жовт.</text>
+<text x="179" y="140" text-anchor="middle">1 лист.</text>
+<text x="250.4" y="140" text-anchor="middle">8 лист.</text>
+<text x="338" y="140" text-anchor="end">16 лист.</text>
+</g>
+</svg>
+<div style="margin-top: 12px; display: flex; gap: 16px; font-size: 12px; line-height: 16px; color: #5E5E63">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #111111"></span>найближчі 7 днів</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; box-sizing: border-box; border-radius: 4px; border: 1.5px solid #8E8E93"></span>далі</span>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 16px; display: flex; flex-direction: column">
+<h2 style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -0.1px">Запамʼятовування</h2>
+<div style="margin-top: 4px; font-size: 12px; line-height: 16px; color: #5E5E63">Частка правильних відповідей у повтореннях</div>
+<div style="margin-top: 16px; display: flex; gap: 8px">
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center" role="img" aria-label="7 днів: 87%, 46 відповідей">
+<div style="width: 96px; height: 56px; position: relative">
+<svg width="96" height="56" viewBox="0 0 96 56" aria-hidden="true"><path d="M8 50 A40 40 0 0 1 88 50" fill="none" stroke="#F2F2F7" stroke-width="9" stroke-linecap="round"></path><path d="M8 50 A40 40 0 0 1 88 50" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round" stroke-dasharray="109.3 200"></path></svg>
+<span style="position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 22px; line-height: 26px; font-weight: 700; letter-spacing: -0.4px">87%</span>
+</div>
+<span style="margin-top: 6px; font-size: 12px; line-height: 16px; font-weight: 600">7 днів</span>
+<span style="font-size: 12px; line-height: 16px; color: #5E5E63">46 відповідей</span>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center" role="img" aria-label="30 днів: 84%, 182 відповіді">
+<div style="width: 96px; height: 56px; position: relative">
+<svg width="96" height="56" viewBox="0 0 96 56" aria-hidden="true"><path d="M8 50 A40 40 0 0 1 88 50" fill="none" stroke="#F2F2F7" stroke-width="9" stroke-linecap="round"></path><path d="M8 50 A40 40 0 0 1 88 50" fill="none" stroke="#3A3A3C" stroke-width="9" stroke-linecap="round" stroke-dasharray="105.6 200"></path></svg>
+<span style="position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 22px; line-height: 26px; font-weight: 700; letter-spacing: -0.4px">84%</span>
+</div>
+<span style="margin-top: 6px; font-size: 12px; line-height: 16px; font-weight: 600">30 днів</span>
+<span style="font-size: 12px; line-height: 16px; color: #5E5E63">182 відповіді</span>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center" role="img" aria-label="90 днів: 81%, 310 відповідей">
+<div style="width: 96px; height: 56px; position: relative">
+<svg width="96" height="56" viewBox="0 0 96 56" aria-hidden="true"><path d="M8 50 A40 40 0 0 1 88 50" fill="none" stroke="#F2F2F7" stroke-width="9" stroke-linecap="round"></path><path d="M8 50 A40 40 0 0 1 88 50" fill="none" stroke="#636366" stroke-width="9" stroke-linecap="round" stroke-dasharray="101.8 200"></path></svg>
+<span style="position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 22px; line-height: 26px; font-weight: 700; letter-spacing: -0.4px">81%</span>
+</div>
+<span style="margin-top: 6px; font-size: 12px; line-height: 16px; font-weight: 600">90 днів</span>
+<span style="font-size: 12px; line-height: 16px; color: #5E5E63">310 відповідей</span>
+</div>
+</div>
+<div style="margin-top: 14px; padding: 10px 12px; border-radius: 12px; background: #DDF1E0; color: #0B3D16; display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; font-weight: 600">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="#1B6E2A" aria-hidden="true"><path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5"></path></svg>
+За тиждень на 6 п. п. краще, ніж у середньому за 90 днів
+</div>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 16px; display: flex; flex-direction: column">
+<h2 style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -0.1px">Відповідей на день</h2>
+<div style="margin-top: 4px; font-size: 12px; line-height: 16px; color: #5E5E63">Днів з тренуванням: 26 · відповідей: 432</div>
+<div style="margin-top: 12px; display: flex; flex-direction: column" role="img" aria-label="Днів з тренуванням: 26, відповідей: 432">
+<div style="display: flex; font-size: 12px; line-height: 16px; color: #5E5E63; text-align: center"><span style="flex: 1">пн</span><span style="flex: 1">вт</span><span style="flex: 1">ср</span><span style="flex: 1">чт</span><span style="flex: 1">пт</span><span style="flex: 1">сб</span><span style="flex: 1">нд</span></div>
+<div style="margin-top: 4px; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex">
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.52)">14</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">15</div></div>
+<div class="cw"><div class="cc cz">16</div></div>
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.43)">17</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">18</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">19</div></div>
+<div class="cw"><div class="cc cz">20</div></div>
+</div>
+<div style="display: flex">
+<div class="cw"><div class="cc" style="background: #F26B1D">21</div></div>
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.588)">22</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">23</div></div>
+<div class="cw"><div class="cc cz">24</div></div>
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.475)">25</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">26</div></div>
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.385)">27</div></div>
+</div>
+<div style="display: flex">
+<div class="cw"><div class="cc cz">28</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">29</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">30</div></div>
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.655)">1</div></div>
+<div class="cw"><div class="cc cz">2</div></div>
+<div class="cw"><div class="cc cz">3</div></div>
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.453)">4</div></div>
+</div>
+<div style="display: flex">
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.565)">5</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">6</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">7</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">8</div></div>
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.407)">9</div></div>
+<div class="cw"><div class="cc cz">10</div></div>
+<div class="cw"><div class="cc cz">11</div></div>
+</div>
+<div style="display: flex">
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.453)">12</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">13</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">14</div></div>
+<div class="cw"><div class="cc" style="background: #F26B1D">15</div></div>
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.565)">16</div></div>
+<div class="cw"><div class="cc" style="background: rgba(242,107,29,0.52); box-shadow: inset 0 0 0 2px #111111">17</div></div>
+<div class="cw"><div class="cc" style="border: 1.5px dashed #D1D1D6; color: #8E8E93; font-weight: 400">18</div></div>
+</div>
+</div>
+</div>
+<div style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 12px; line-height: 16px; color: #5E5E63">
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 12px; height: 12px; border-radius: 3px; background: #E9E9EE"></span>0</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 12px; height: 12px; border-radius: 3px; background: rgba(242,107,29,0.45)"></span>менше цілі</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 12px; height: 12px; border-radius: 3px; background: #F26B1D"></span>ціль</span>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden">
+<h2 style="margin: 0; padding: 16px 16px 4px; font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -0.1px">Найслабші ходи</h2>
+
+<a href="#" style="text-decoration: none; color: #111111; display: flex; align-items: center; gap: 16px; padding: 10px 24px 10px 16px">
+<span style="width: 40px; height: 40px; flex: none; border-radius: 20px; background: #FDE4E2; color: #5A0F0C; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 16px; font-weight: 600">4</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-size: 14px; line-height: 20px">1. d4 d5 2. Bf4 Nf6 3. e3</span>
+<span style="font-size: 14px; line-height: 20px; color: #5E5E63">Чорні проти 1.d4: ферзевий гамбіт відхилений · Помилок за 30 днів: 4</span>
+</span>
+<svg width="24" height="24" viewBox="0 0 16 16" fill="#111111" aria-hidden="true"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393"></path></svg>
+</a>
+
+<a href="#" style="text-decoration: none; color: #111111; display: flex; align-items: center; gap: 16px; padding: 10px 24px 10px 16px">
+<span style="width: 40px; height: 40px; flex: none; border-radius: 20px; background: #FDE4E2; color: #5A0F0C; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 16px; font-weight: 600">3</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-size: 14px; line-height: 20px">1. e4 e5 2. Nf3 Nc6</span>
+<span style="font-size: 14px; line-height: 20px; color: #5E5E63">Білі: основи 1.e4 · Помилок за 30 днів: 3</span>
+</span>
+<svg width="24" height="24" viewBox="0 0 16 16" fill="#111111" aria-hidden="true"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393"></path></svg>
+</a>
+
+<div style="height: 8px"></div>
+</section>
+
+</div>
+
+<div style="position: absolute; left: 50%; bottom: 8px; width: 140px; height: 5px; margin-left: -70px; border-radius: 3px; background: #111111" aria-hidden="true"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":402,"height":1540}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

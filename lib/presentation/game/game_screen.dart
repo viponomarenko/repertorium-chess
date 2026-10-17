@@ -138,6 +138,9 @@ class _GameViewState extends ConsumerState<_GameView> {
 
   ShapeColor _drawColor = ShapeColor.green;
   String? _bestMove;
+
+  /// The first move of the engine's second line, while two or more show.
+  String? _secondMove;
   final _enginePanelKey = GlobalKey();
   Square? _drawStart;
   Square? _drawHover;
@@ -300,12 +303,8 @@ class _GameViewState extends ConsumerState<_GameView> {
 
   Future<void> _nagPicker(GameNode n) async {
     final l = context.l10n;
-    await showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      showDragHandle: true,
-      // Taller than the default 9/16 of the screen on smaller phones.
-      isScrollControlled: true,
+    await showAppModal<void>(
+      context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) {
           Widget chip(int nag) {
@@ -375,11 +374,8 @@ class _GameViewState extends ConsumerState<_GameView> {
   Future<void> _nodeMenu(GameNode n) async {
     final l = context.l10n;
     final isVariation = n.parent != null && n.parent!.children.first != n;
-    await showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      showDragHandle: true,
-      isScrollControlled: true,
+    await showAppModal<void>(
+      context,
       builder: (ctx) => SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -618,6 +614,21 @@ class _GameViewState extends ConsumerState<_GameView> {
     final sibIndex = sib.indexOf(_gameId ?? -1);
     final unsavedAnalysis = _gameId == null && _c.canUndo;
 
+    final toolbarHeight = _gameId == null
+        ? kToolbarHeight
+        : kToolbarHeight * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+    final bars = _forLine
+        ? Column(mainAxisSize: MainAxisSize.min, children: [_lineBar(context), _actionBar(context)])
+        : _actionBar(context);
+    // Board and text side by side: the tools go under the text, next to
+    // what they act on, and the board gets the whole height (D-084).
+    final mq = MediaQuery.of(context);
+    final barInPanel = BoardLayout.isWide(
+      BoxConstraints(
+        maxWidth: mq.size.width - mq.padding.horizontal,
+        maxHeight: mq.size.height - mq.padding.vertical - toolbarHeight,
+      ),
+    );
     return PopScope(
       canPop: _forLine ? _lineToAdd.isEmpty : !unsavedAnalysis && !_c.dirty && !_c.saving,
       onPopInvokedWithResult: (didPop, _) async {
@@ -675,9 +686,7 @@ class _GameViewState extends ConsumerState<_GameView> {
             autofocus: true,
             child: Scaffold(
               appBar: AppBar(
-                toolbarHeight: _gameId == null
-                    ? null
-                    : kToolbarHeight * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
+                toolbarHeight: toolbarHeight,
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -761,17 +770,25 @@ class _GameViewState extends ConsumerState<_GameView> {
               body: SafeArea(
                 // The board keeps the size the user chose with the grip on
                 // every screen (D-052); open panels share the room below it.
+                bottom: !barInPanel,
                 child: BoardLayout(
+                  gripHeight: _gripHeight,
                   board: _board(context),
                   below: (context, g) {
                     _wide = g.wide;
-                    return _side(context);
+                    final side = _side(context);
+                    return barInPanel
+                        ? Column(
+                            children: [
+                              Expanded(child: side),
+                              bars,
+                            ],
+                          )
+                        : side;
                   },
                 ),
               ),
-              bottomNavigationBar: _forLine
-                  ? Column(mainAxisSize: MainAxisSize.min, children: [_lineBar(context), _actionBar(context)])
-                  : _actionBar(context),
+              bottomNavigationBar: barInPanel ? null : bars,
             ),
           ),
         ),
@@ -935,6 +952,15 @@ class _GameViewState extends ConsumerState<_GameView> {
   }
 
   Iterable<Shape> _engineArrow() sync* {
+    // The second line first: the best move's arrow is drawn over it.
+    final second = _secondMove;
+    if (second != null && second != _bestMove) {
+      final m2 = parseUciMove(_c.position, second);
+      if (m2 is NormalMove) {
+        final std = NormalMove.fromUci(standardUci(_c.position, m2));
+        yield Arrow(color: BoardColors.engineMoveSecond, orig: std.from, dest: std.to, scale: 0.8);
+      }
+    }
     final m = parseUciMove(_c.position, _bestMove!);
     if (m is NormalMove) {
       final std = NormalMove.fromUci(standardUci(_c.position, m));
@@ -944,7 +970,10 @@ class _GameViewState extends ConsumerState<_GameView> {
 
   void _toggleEngine() => setState(() {
     _engine = !_engine;
-    if (!_engine) _bestMove = null;
+    if (!_engine) {
+      _bestMove = null;
+      _secondMove = null;
+    }
     // On phones one analysis panel at a time keeps the notation visible.
     if (_engine && !_wide) _explorer = false;
   });
@@ -966,7 +995,7 @@ class _GameViewState extends ConsumerState<_GameView> {
     final comment = cur.isRoot
         ? _c.game.root.comments.map((c) => c.text).where((t) => t.isNotEmpty).join(' ')
         : cur.commentText;
-    final notation = NotationView(
+    final notationView = NotationView(
       game: _c.game,
       current: cur,
       revision: _c.revision,
@@ -976,6 +1005,17 @@ class _GameViewState extends ConsumerState<_GameView> {
         _announce(n);
       },
       onLongPress: (n, _) => _nodeMenu(n),
+    );
+    // A soft fade along the top edge: a cut row reads as scrolled, not
+    // broken (D-097).
+    final notation = ShaderMask(
+      shaderCallback: (r) => LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.transparent, theme.colorScheme.surface],
+      ).createShader(Rect.fromLTWH(0, 0, r.width, _notationFade)),
+      blendMode: BlendMode.dstIn,
+      child: notationView,
     );
     return LayoutBuilder(
       builder: (context, box) {
@@ -996,12 +1036,24 @@ class _GameViewState extends ConsumerState<_GameView> {
         final double? panelMax = tight ? null : room;
         final column = Column(
           children: [
+            // The opening: its code in ink, the name in grey (D-097).
             if (opening != null)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(AppSpacing.page, 0, AppSpacing.page, AppSpacing.xxs),
-                child: Text(
-                  '${opening.eco} · ${opening.name}',
+                padding: const EdgeInsets.fromLTRB(AppSpacing.page, 0, AppSpacing.page, AppSpacing.xs),
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: opening.eco,
+                        style: context.tt.meta.copyWith(
+                          fontWeight: context.tt.title.fontWeight,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      TextSpan(text: ' · ${opening.name}'),
+                    ],
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.tt.meta,
@@ -1012,6 +1064,10 @@ class _GameViewState extends ConsumerState<_GameView> {
                 child: Material(
                   key: const ValueKey('game-engine-panel'),
                   color: theme.colorScheme.surfaceContainerLow,
+                  // A hairline under the panel, above the notation.
+                  shape: Border(
+                    bottom: BorderSide(color: theme.colorScheme.secondaryContainer, width: AppSizes.hairline),
+                  ),
                   child: EnginePanel(
                     key: _enginePanelKey,
                     fen: _c.position.fen,
@@ -1020,6 +1076,9 @@ class _GameViewState extends ConsumerState<_GameView> {
                     onAddLine: (moves) => _c.addLine(_c.current, moves),
                     onBestMove: (m) {
                       if (m != _bestMove && mounted) setState(() => _bestMove = m);
+                    },
+                    onSecondMove: (m) {
+                      if (m != _secondMove && mounted) setState(() => _secondMove = m);
                     },
                   ),
                 ),
@@ -1083,7 +1142,11 @@ class _GameViewState extends ConsumerState<_GameView> {
                 child: notation,
               )
             else
-              Expanded(child: notation),
+              // The whole width: a short game starts at the left edge, not
+              // in the middle of a wide panel.
+              Expanded(
+                child: SizedBox(width: double.infinity, child: notation),
+              ),
             if (cur.children.length > 1) _variationRow(context),
             // Only a comment that exists takes a row; an empty one is added
             // from "Actions" (a hint row cost 48 points under every move).
@@ -1122,6 +1185,11 @@ class _GameViewState extends ConsumerState<_GameView> {
 
   /// Two rows of notation stay visible under the analysis panels.
   static const _notationMin = 2 * AppSizes.moveRow + 2 * AppSpacing.xxs;
+
+  /// The fade along the notation's top edge and the grip under the board
+  /// (tighter than on other screens, D-097).
+  static const double _notationFade = 18;
+  static const double _gripHeight = 10;
 
   /// The engine's score row, bar, caption and its best line (two lines of
   /// text), at 100 % text size.

@@ -11,6 +11,8 @@ import '../../domain/chess/chess_utils.dart';
 import '../../domain/pgn/pgn_parser.dart';
 import '../../domain/training/training_engine.dart';
 import '../app/providers.dart';
+import '../openings/opening_picker.dart';
+import '../theme/app_icons.dart';
 import '../training/training_args.dart';
 import '../widgets/board_view.dart';
 import '../widgets/common.dart';
@@ -73,6 +75,10 @@ class _CreateRepertoireDialogState extends ConsumerState<_CreateRepertoireDialog
   Position? _pos = Chess.initial;
   bool _busy = false;
 
+  /// The opening picked from the catalog, shown over the preview until
+  /// the moves are edited by hand.
+  String? _opening;
+
   /// Side of the board that previews the start position.
   static const double _previewBoard = 200;
 
@@ -87,6 +93,17 @@ class _CreateRepertoireDialogState extends ConsumerState<_CreateRepertoireDialog
     _name.dispose();
     _start.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickOpening() async {
+    final o = await showOpeningPicker(context);
+    if (o == null || !mounted) return;
+    setState(() {
+      _start.text = openingMovesText(o);
+      _pos = parseStartSpec(_start.text);
+      _opening = '${o.eco} · ${o.name}';
+      if (_name.text.trim().isEmpty) _name.text = o.name;
+    });
   }
 
   Future<void> _create() async {
@@ -161,13 +178,30 @@ class _CreateRepertoireDialogState extends ConsumerState<_CreateRepertoireDialog
                     errorText: _pos == null ? l.invalidMovesOrFen : null,
                     helperMaxLines: 3,
                   ),
-                  onChanged: (v) => setState(() => _pos = parseStartSpec(v)),
+                  onChanged: (v) => setState(() {
+                    _pos = parseStartSpec(v);
+                    _opening = null;
+                  }),
                 ),
-                AppGap.v12,
-                if (_pos != null)
+                // The start position from the catalog, without typing.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _busy ? null : _pickOpening,
+                    icon: const Icon(AppIcons.openings),
+                    label: Text(l.pickFromCatalog),
+                  ),
+                ),
+                if (_pos != null) ...[
+                  if (_opening != null) ...[
+                    AppGap.v4,
+                    Text(_opening!, textAlign: TextAlign.center, style: context.tt.meta),
+                  ],
+                  AppGap.v8,
                   Center(
                     child: MiniBoard(fen: _pos!.fen, orientation: _color, size: _previewBoard),
                   ),
+                ],
               ],
             ),
           ),

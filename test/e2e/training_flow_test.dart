@@ -43,7 +43,7 @@ void main() {
       },
     );
     final expected = expectedMoves();
-    await tapText(tester, 'Тренуватись');
+    await tapText(tester, 'ТРЕНУВАТИСЬ');
 
     var linesDone = 0;
     var sawFinish = false;
@@ -105,7 +105,7 @@ void main() {
         pos = pos.play(pos.parseSan(san)!);
       }
     }
-    await tapText(tester, 'Тренуватись');
+    await tapText(tester, 'ТРЕНУВАТИСЬ');
 
     final played = <String>{};
     for (var step = 0; step < 300; step++) {
@@ -167,10 +167,10 @@ void main() {
       if (pos.turn == Side.white) expected[positionKeyOf(pos)] = san;
       pos = pos.play(pos.parseSan(san)!);
     }
-    expect(find.text('Тренуватись'), findsOneWidget);
+    expect(find.text('ТРЕНУВАТИСЬ'), findsOneWidget);
     expect(find.textContaining('Вивчити нові'), findsNothing);
     expect(find.textContaining('1 повторення'), findsOneWidget);
-    await tapText(tester, 'Тренуватись');
+    await tapText(tester, 'ТРЕНУВАТИСЬ');
     expect(find.text('Повторення'), findsOneWidget);
 
     final titles = <String>{};

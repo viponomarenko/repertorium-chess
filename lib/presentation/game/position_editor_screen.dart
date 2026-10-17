@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart' hide PgnComment;
@@ -12,6 +13,7 @@ import '../../domain/chess/chess_utils.dart';
 import '../app/providers.dart';
 import '../repertoire/create_repertoire_dialog.dart';
 import '../theme/app_icons.dart';
+import '../widgets/board_layout.dart';
 import '../widgets/board_view.dart';
 import '../widgets/common.dart';
 import '../widgets/san_text.dart';
@@ -29,6 +31,12 @@ class PositionEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _PositionEditorScreenState extends ConsumerState<PositionEditorScreen> {
+  /// The board of a phone-sized column; a tablet may give it more.
+  static const double _boardWidth = 560;
+
+  /// What the pieces and the settings under the board take, roughly.
+  static const double _settingsHeight = 520;
+
   late Pieces _pieces;
   Side _turn = Side.white;
   final Set<String> _castling = {};
@@ -348,180 +356,220 @@ class _PositionEditorScreenState extends ConsumerState<PositionEditorScreen> {
           ],
         ),
         body: SafeArea(
-          child: ListView(
-            children: [
-              _palette(_orientation.opposite),
-              LayoutBuilder(
-                builder: (context, c) {
-                  final size = c.maxWidth.clamp(0.0, 560.0);
-                  return Center(
-                    child: MediaQuery.withClampedTextScaling(
-                      maxScaleFactor: kBoardTextScaleMax,
-                      child: Semantics(
-                        label:
-                            '${l.positionEditor}, ${_eraser
-                                ? l.eraser
-                                : _brush != null
-                                ? _pieceLabel(_brush, l)
-                                : l.dragMode}',
-                        hint: l.editSquareHint,
-                        button: true,
-                        onTap: _editAccessibleSquare,
-                        excludeSemantics: true,
-                        child: ChessboardEditor(
-                          size: size,
-                          orientation: _orientation,
-                          pieces: _pieces,
-                          pointerMode: _brush != null || _eraser ? EditorPointerMode.edit : EditorPointerMode.drag,
-                          settings: BoardAppearance.settings(settings),
-                          onEditedSquare: (sq) => setState(() {
-                            if (_eraser) {
-                              _pieces = {..._pieces}..remove(sq);
-                            } else if (_brush != null) {
-                              final existing = _pieces[sq];
-                              _pieces = {..._pieces};
-                              if (existing == _brush) {
-                                _pieces.remove(sq);
-                              } else {
-                                _pieces[sq] = _brush!;
+          child: LayoutBuilder(
+            builder: (context, box) {
+              // The board between the two rows of pieces to put on it.
+              Widget boardPart(double size) => SizedBox(
+                width: size,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _palette(_orientation.opposite),
+                    Center(
+                      child: MediaQuery.withClampedTextScaling(
+                        maxScaleFactor: kBoardTextScaleMax,
+                        child: Semantics(
+                          label:
+                              '${l.positionEditor}, ${_eraser
+                                  ? l.eraser
+                                  : _brush != null
+                                  ? _pieceLabel(_brush, l)
+                                  : l.dragMode}',
+                          hint: l.editSquareHint,
+                          button: true,
+                          onTap: _editAccessibleSquare,
+                          excludeSemantics: true,
+                          child: ChessboardEditor(
+                            size: size,
+                            orientation: _orientation,
+                            pieces: _pieces,
+                            pointerMode: _brush != null || _eraser ? EditorPointerMode.edit : EditorPointerMode.drag,
+                            settings: BoardAppearance.settings(settings),
+                            onEditedSquare: (sq) => setState(() {
+                              if (_eraser) {
+                                _pieces = {..._pieces}..remove(sq);
+                              } else if (_brush != null) {
+                                final existing = _pieces[sq];
+                                _pieces = {..._pieces};
+                                if (existing == _brush) {
+                                  _pieces.remove(sq);
+                                } else {
+                                  _pieces[sq] = _brush!;
+                                }
                               }
-                            }
-                          }),
-                          onDroppedPiece: (origin, dest, piece) => setState(() {
-                            _pieces = {..._pieces};
-                            if (origin != null) _pieces.remove(origin);
-                            _pieces[dest] = piece;
-                          }),
-                          onDiscardedPiece: (sq) => setState(() => _pieces = {..._pieces}..remove(sq)),
+                            }),
+                            onDroppedPiece: (origin, dest, piece) => setState(() {
+                              _pieces = {..._pieces};
+                              if (origin != null) _pieces.remove(origin);
+                              _pieces[dest] = piece;
+                            }),
+                            onDiscardedPiece: (sq) => setState(() => _pieces = {..._pieces}..remove(sq)),
+                          ),
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
-              _palette(_orientation),
-              // The problem is shown right under the board, where the user looks.
-              if (error != null)
-                Semantics(
-                  liveRegion: true,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
-                    child: InfoStrip(icon: AppIcons.error, text: error, tone: Tone.error),
+                    _palette(_orientation),
+                  ],
+                ),
+              );
+              final controls = <Widget>[
+                // The problem is shown right under the board, where the user looks.
+                if (error != null)
+                  Semantics(
+                    liveRegion: true,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+                      child: InfoStrip(icon: AppIcons.error, text: error, tone: Tone.error),
+                    ),
+                  ),
+                // Whose move it is: the one thing every set-up needs, so it is
+                // first under the board (it used to sit below the fold).
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.page, AppSpacing.md, AppSpacing.page, 0),
+                  child: ChoiceSegments<Side>(
+                    options: [ChoiceOption(Side.white, l.whiteToMove), ChoiceOption(Side.black, l.blackToMove)],
+                    selected: _turn,
+                    onChanged: (v) => setState(() => _turn = v),
                   ),
                 ),
-              // Whose move it is: the one thing every set-up needs, so it is
-              // first under the board (it used to sit below the fold).
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.page, AppSpacing.md, AppSpacing.page, 0),
-                child: ChoiceSegments<Side>(
-                  options: [ChoiceOption(Side.white, l.whiteToMove), ChoiceOption(Side.black, l.blackToMove)],
-                  selected: _turn,
-                  onChanged: (v) => setState(() => _turn = v),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    ActionChip(label: Text(l.editSquare), onPressed: _editAccessibleSquare),
-                    FilterChip(
-                      avatar: const Icon(AppIcons.clearBoard, size: AppSizes.iconMd),
-                      label: Text(l.eraser),
-                      selected: _eraser,
-                      onSelected: (v) => setState(() {
-                        _eraser = v;
-                        if (v) _brush = null;
-                      }),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(AppIcons.movePieces, size: AppSizes.iconMd),
-                      label: Text(l.dragMode),
-                      onPressed: () => setState(() {
-                        _brush = null;
-                        _eraser = false;
-                      }),
-                    ),
-                    ActionChip(label: Text(l.startPosition), onPressed: () => setState(() => _load(kInitialFen))),
-                    ActionChip(
-                      label: Text(l.clearBoard),
-                      onPressed: () => setState(() => _load('8/8/8/8/8/8/8/8 w - - 0 1')),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: AppInsets.pageH,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(l.castling, style: context.tt.title),
-                    Wrap(
-                      spacing: AppSpacing.sm,
-                      children: [
-                        for (final (c, label, kind) in [
-                          ('K', l.castleWhiteShort, PieceKind.whiteKing),
-                          ('Q', l.castleWhiteLong, PieceKind.whiteKing),
-                          ('k', l.castleBlackShort, PieceKind.blackKing),
-                          ('q', l.castleBlackLong, PieceKind.blackKing),
-                        ])
-                          FilterChip(
-                            avatar: PieceIcon(kind, size: AppSizes.iconMd),
-                            label: Text(label),
-                            selected: _castling.contains(c) && _castlingPossible(c),
-                            onSelected: _castlingPossible(c)
-                                ? (v) => setState(() => v ? _castling.add(c) : _castling.remove(c))
-                                : null,
-                          ),
-                      ],
-                    ),
-                    if (eps.isNotEmpty) ...[
-                      AppGap.v12,
-                      DropdownButtonFormField<String?>(
-                        icon: const Icon(AppIcons.expand, size: AppSizes.iconMd),
-                        initialValue: _ep,
-                        decoration: InputDecoration(labelText: l.enPassant),
-                        items: [
-                          DropdownMenuItem(value: null, child: Text(l.none)),
-                          for (final e in eps) DropdownMenuItem(value: e, child: Text(e)),
-                        ],
-                        onChanged: (v) => setState(() => _ep = v),
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      ActionChip(label: Text(l.editSquare), onPressed: _editAccessibleSquare),
+                      FilterChip(
+                        avatar: const Icon(AppIcons.clearBoard, size: AppSizes.iconMd),
+                        label: Text(l.eraser),
+                        selected: _eraser,
+                        onSelected: (v) => setState(() {
+                          _eraser = v;
+                          if (v) _brush = null;
+                        }),
+                      ),
+                      ActionChip(
+                        avatar: const Icon(AppIcons.movePieces, size: AppSizes.iconMd),
+                        label: Text(l.dragMode),
+                        onPressed: () => setState(() {
+                          _brush = null;
+                          _eraser = false;
+                        }),
+                      ),
+                      ActionChip(label: Text(l.startPosition), onPressed: () => setState(() => _load(kInitialFen))),
+                      ActionChip(
+                        label: Text(l.clearBoard),
+                        onPressed: () => setState(() => _load('8/8/8/8/8/8/8/8 w - - 0 1')),
                       ),
                     ],
-                    AppGap.v12,
-                    SelectableText(_fen, style: context.tt.mono),
-                    AppGap.v16,
-                    if (!widget.pickMode) ...[
-                      FilledButton.icon(
-                        style: AppButtonSize.large,
-                        onPressed: error == null
-                            ? () => context.push('/analysis', extra: GameScreenArgs(fen: positionFromFen(_fen).fen))
-                            : null,
-                        icon: const Icon(AppIcons.analysis),
-                        label: Text(l.analyzePosition),
-                      ),
-                      AppGap.v8,
-                      OutlinedButton.icon(
-                        style: AppButtonSize.wide,
-                        onPressed: error == null
-                            ? () => showCreateRepertoire(context, fen: positionFromFen(_fen).fen, color: _turn)
-                            : null,
-                        icon: const Icon(AppIcons.repertoire),
-                        label: Text(l.createRepertoireFromHere),
-                      ),
-                    ] else
-                      FilledButton(
-                        style: AppButtonSize.large,
-                        onPressed: error == null ? () => context.pop(positionFromFen(_fen).fen) : null,
-                        child: Text(l.done),
-                      ),
-                    AppGap.v24,
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: AppInsets.pageH,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(l.castling, style: context.tt.title),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        children: [
+                          for (final (c, label, kind) in [
+                            ('K', l.castleWhiteShort, PieceKind.whiteKing),
+                            ('Q', l.castleWhiteLong, PieceKind.whiteKing),
+                            ('k', l.castleBlackShort, PieceKind.blackKing),
+                            ('q', l.castleBlackLong, PieceKind.blackKing),
+                          ])
+                            FilterChip(
+                              avatar: PieceIcon(kind, size: AppSizes.iconMd),
+                              label: Text(label),
+                              selected: _castling.contains(c) && _castlingPossible(c),
+                              onSelected: _castlingPossible(c)
+                                  ? (v) => setState(() => v ? _castling.add(c) : _castling.remove(c))
+                                  : null,
+                            ),
+                        ],
+                      ),
+                      if (eps.isNotEmpty) ...[
+                        AppGap.v12,
+                        DropdownButtonFormField<String?>(
+                          icon: const Icon(AppIcons.expand, size: AppSizes.iconMd),
+                          initialValue: _ep,
+                          decoration: InputDecoration(labelText: l.enPassant),
+                          items: [
+                            DropdownMenuItem(value: null, child: Text(l.none)),
+                            for (final e in eps) DropdownMenuItem(value: e, child: Text(e)),
+                          ],
+                          onChanged: (v) => setState(() => _ep = v),
+                        ),
+                      ],
+                      AppGap.v12,
+                      SelectableText(_fen, style: context.tt.mono),
+                      AppGap.v16,
+                      if (!widget.pickMode) ...[
+                        FilledButton.icon(
+                          style: AppButtonSize.large,
+                          onPressed: error == null
+                              ? () => context.push('/analysis', extra: GameScreenArgs(fen: positionFromFen(_fen).fen))
+                              : null,
+                          icon: const Icon(AppIcons.analysis),
+                          label: Text(l.analyzePosition),
+                        ),
+                        AppGap.v8,
+                        OutlinedButton.icon(
+                          style: AppButtonSize.wide,
+                          onPressed: error == null
+                              ? () => showCreateRepertoire(context, fen: positionFromFen(_fen).fen, color: _turn)
+                              : null,
+                          icon: const Icon(AppIcons.repertoire),
+                          label: Text(l.createRepertoireFromHere),
+                        ),
+                      ] else
+                        FilledButton(
+                          style: AppButtonSize.large,
+                          onPressed: error == null ? () => context.pop(positionFromFen(_fen).fen) : null,
+                          child: Text(l.done),
+                        ),
+                      AppGap.v24,
+                    ],
+                  ),
+                ),
+              ];
+              // A wide screen: the board on the left at full height, the
+              // settings of the position beside it, nothing below the fold
+              // (D-084).
+              if (BoardLayout.isWide(box)) {
+                final size = math.min(
+                  box.maxHeight - 2 * AppSizes.tapTarget - 2 * AppSpacing.sm,
+                  box.maxWidth - AppSizes.minPanelWidth / 2,
+                );
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(padding: const EdgeInsets.all(AppSpacing.sm), child: boardPart(size)),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
+                        children: controls,
+                      ),
+                    ),
+                  ],
+                );
+              }
+              // Upright: one column; a tablet gives the board what is left
+              // of the height after the settings.
+              final size = math.min(
+                box.maxWidth,
+                math.max(_boardWidth, math.min(AppSizes.maxContentWidth, box.maxHeight - _settingsHeight)),
+              );
+              return ListView(
+                padding: EdgeInsets.zero.inPage(context, width: size),
+                children: [
+                  Center(child: boardPart(size)),
+                  ...controls,
+                ],
+              );
+            },
           ),
         ),
       ),

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants.dart';
+import '../../core/formatters.dart';
 import '../../core/l10n.dart';
 import '../../data/db/database.dart';
 import '../../data/engine/engine_check.dart';
@@ -209,7 +210,7 @@ class _RepertoireScreenState extends ConsumerState<RepertoireScreen> with Single
 
   Set<PositionKey> _problemKeys(RepertoireGraph g) => {
     for (final p in g.positions.values)
-      if (p.conflictDeferred || p.engineFlag.isNotEmpty || g.isGap(p.key)) p.key,
+      if (p.conflictDeferred || EngineFlag.isActive(p.engineFlag) || g.isGap(p.key)) p.key,
     ..._errorKeys.where(g.positions.containsKey),
   };
 
@@ -559,26 +560,17 @@ class _RepertoireScreenState extends ConsumerState<RepertoireScreen> with Single
     if (!ok || !mounted) return;
     final repo = ref.read(repertoireRepositoryProvider);
     final refresh = ref.read(refreshTickProvider.notifier);
-    final messenger = ScaffoldMessenger.of(context);
     final snapshot = await repo.snapshot(widget.id);
     await repo.delete(widget.id);
     // Today's cards (problem positions, counters) must forget it at once.
     refresh.bump();
     if (!mounted) return;
     context.go('/repertoires');
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l.repertoireDeleted),
-          action: snapshot == null
-              ? null
-              : SnackBarAction(
-                  label: l.undo,
-                  onPressed: () => unawaited(repo.restoreSnapshot(snapshot).then((_) => refresh.bump())),
-                ),
-        ),
-      );
+    showNotice(
+      l.repertoireDeleted,
+      actionLabel: snapshot == null ? null : l.undo,
+      onAction: snapshot == null ? null : () => unawaited(repo.restoreSnapshot(snapshot).then((_) => refresh.bump())),
+    );
   }
 
   Future<void> _rename() async {
@@ -726,8 +718,7 @@ class _RepertoireScreenState extends ConsumerState<RepertoireScreen> with Single
             ],
             // Training sits with the other repertoire actions (a floating
             // button covered the content under the board).
-            if (!_editing && g.cards.isNotEmpty)
-              IconButton(tooltip: l.train, onPressed: _train, icon: const Icon(AppIcons.play)),
+            if (!_editing && g.cards.isNotEmpty) _TrainButton(id: widget.id, onPressed: _train),
             if (!_editing)
               IconButton(
                 tooltip: l.editRepertoire,
@@ -755,7 +746,10 @@ class _RepertoireScreenState extends ConsumerState<RepertoireScreen> with Single
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(l.tabProblems),
-                    if (problems.isNotEmpty) ...[AppGap.h4, Badge(label: Text('${problems.length}'))],
+                    if (problems.isNotEmpty) ...[
+                      const SizedBox(width: _ProblemsCount.gap),
+                      _ProblemsCount(problems.length),
+                    ],
                   ],
                 ),
               ),
@@ -906,7 +900,7 @@ class _ProblemsTabState extends ConsumerState<_ProblemsTab> {
     final g = widget.c.graph!;
     final deferred = g.positions.values.where((p) => p.conflictDeferred).toList();
     final gaps = g.positions.keys.where(g.isGap).toList();
-    final flagged = g.positions.values.where((p) => p.engineFlag.isNotEmpty).toList();
+    final flagged = g.positions.values.where((p) => EngineFlag.isActive(p.engineFlag)).toList();
     final errors = widget.errorKeys.where(g.positions.containsKey).toList();
 
     Widget section(String title, String hint, IconData icon, Color color, List<Widget> items) => Card(
@@ -921,7 +915,7 @@ class _ProblemsTabState extends ConsumerState<_ProblemsTab> {
     );
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: AppSpacing.listBottom),
+      padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
       children: [
         section(l.deferredConflicts, l.deferredConflictsHint, AppIcons.variations, theme.colorScheme.error, [
           for (final p in deferred)
@@ -970,8 +964,11 @@ class _ProblemsTabState extends ConsumerState<_ProblemsTab> {
               title: MovesText(_where(p.key)),
               subtitle: () {
                 final f = EngineFlag.decode(p.engineFlag);
-                return f == null ? null : MovesText(l.engineFlagHint(f.bestSan, f.depth));
+                return f == null
+                    ? null
+                    : MovesText('${l.engineFlagHint(f.bestSan, f.depth)} −${context.fmtDecimal(f.lossCp / 100)}');
               }(),
+              trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
               onTap: () => widget.onOpen(p.key),
             ),
         ]),
@@ -1019,6 +1016,87 @@ class _ProblemsTabState extends ConsumerState<_ProblemsTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The repertoire's train button (D-095): a grey pill with the play mark
+/// and the moves due for review here today (the number on its card on
+/// "Today", within the daily limit); with nothing due, a round play
+/// button. Either way it opens the choice of modes.
+class _TrainButton extends ConsumerWidget {
+  const _TrainButton({required this.id, required this.onPressed});
+  final int id;
+  final VoidCallback onPressed;
+
+  static const _pill = ButtonStyle(
+    minimumSize: WidgetStatePropertyAll(Size(0, AppSizes.controlSm)),
+    padding: WidgetStatePropertyAll(
+      EdgeInsets.only(left: AppSpacing.md - AppSpacing.xxs, right: AppSpacing.md + AppSpacing.xxs),
+    ),
+    tapTargetSize: MaterialTapTargetSize.padded,
+  );
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final cs = Theme.of(context).colorScheme;
+    final summary = ref.watch(repertoiresProvider).value?.where((r) => r.row.id == id).firstOrNull;
+    final reviewed = ref.watch(reviewedTodayProvider).value ?? 0;
+    final left = (ref.watch(settingsProvider.select((s) => s.reviewsPerDay)) - reviewed).clamp(0, 100000);
+    final due = summary == null ? 0 : (summary.due < left ? summary.due : left);
+    if (due <= 0) {
+      return IconButton.filledTonal(tooltip: l.train, onPressed: onPressed, icon: const Icon(AppIcons.play));
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+      child: Tooltip(
+        message: l.trainDueCount(due),
+        excludeFromSemantics: true,
+        child: Semantics(
+          label: l.trainDueCount(due),
+          button: true,
+          excludeSemantics: true,
+          child: FilledButton.icon(
+            style: _pill.merge(
+              FilledButton.styleFrom(backgroundColor: cs.secondaryContainer, foregroundColor: cs.onSecondaryContainer),
+            ),
+            onPressed: onPressed,
+            icon: const Icon(AppIcons.play, size: AppSizes.iconSm),
+            label: Text('$due', style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The number of problems after the tab's name: a neutral pill, not an
+/// alarm-red badge (D-088, D-095).
+class _ProblemsCount extends StatelessWidget {
+  const _ProblemsCount(this.count);
+  final int count;
+
+  static const double gap = 6;
+  static const double _size = 18;
+  static const double _padding = 5;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minWidth: _size, minHeight: _size),
+      padding: const EdgeInsets.symmetric(horizontal: _padding),
+      decoration: BoxDecoration(color: cs.secondaryContainer, borderRadius: AppRadius.full),
+      child: Center(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.2,
+          child: Text('$count', style: theme.textTheme.labelSmall?.copyWith(color: cs.onSecondaryContainer).tabular),
+        ),
+      ),
     );
   }
 }

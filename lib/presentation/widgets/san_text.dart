@@ -17,8 +17,8 @@ import '../app/providers.dart';
 import '../theme/typography.dart';
 import 'board_view.dart';
 
-/// Cap height of Google Sans as a fraction of the font size (716 / 1000).
-const _capHeight = 0.716;
+/// Cap height of Exo 2 as a fraction of the font size (690 / 1000).
+const _capHeight = 0.690;
 
 const _ukLetters = {'K': 'Кр', 'Q': 'Ф', 'R': 'Т', 'B': 'С', 'N': 'К'};
 

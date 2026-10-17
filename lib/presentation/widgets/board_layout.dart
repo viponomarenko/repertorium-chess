@@ -4,6 +4,8 @@
 /// board smaller to give the text more room (or back). The size is a single
 /// setting, so a board resized on one screen is the same on the others.
 /// Landscape: the board fills the height on the left, the text on the right.
+/// A tablet in portrait: the board leaves the text its share of the height;
+/// both stand in one column in the middle.
 library;
 
 import 'dart:math' as math;
@@ -21,8 +23,9 @@ const kMinBoardScale = 0.5;
 /// Reading mode: the board this share of the width, the rest for text.
 const kReadingBoardScale = 0.6;
 
-/// Height of the grip under the board.
-const kBoardGripHeight = 20.0;
+/// Height of the grip under the board: compact, so the text under the
+/// board keeps its room (D-095).
+const kBoardGripHeight = 14.0;
 
 /// Room every screen keeps under the board for its text, at 100 % text
 /// size; screens with open panels ask for more via [BoardLayout.extraBelow].
@@ -39,8 +42,12 @@ void toggleReadingBoard(WidgetRef ref) =>
 
 /// Where the board ended up; passed to the panel builder.
 class BoardGeometry {
-  const BoardGeometry({required this.boardSize, required this.wide, required this.constraints});
+  const BoardGeometry({required this.boardSize, required this.wide, required this.constraints, this.gutter = 0});
   final double boardSize;
+
+  /// With [BoardLayout.belowBleeds]: the side margin that keeps the text
+  /// in one column with a board narrower than the screen.
+  final double gutter;
 
   /// Landscape: the panel stands beside the board, not under it.
   final bool wide;
@@ -48,7 +55,21 @@ class BoardGeometry {
 }
 
 class BoardLayout extends ConsumerStatefulWidget {
-  const BoardLayout({super.key, required this.board, required this.below, this.extraBelow});
+  const BoardLayout({
+    super.key,
+    required this.board,
+    required this.below,
+    this.extraBelow,
+    this.belowBleeds = false,
+    this.gripHeight = kBoardGripHeight,
+  });
+
+  /// Height of the grip under the board (the analysis keeps it tighter).
+  final double gripHeight;
+
+  /// The text has a bar that goes from edge to edge, so it takes the whole
+  /// width and keeps the rest in the column itself ([BoardGeometry.gutter]).
+  final bool belowBleeds;
 
   /// The board; laid out as a square of the computed size.
   final Widget board;
@@ -94,16 +115,31 @@ class _BoardLayoutState extends ConsumerState<BoardLayout> {
           );
         }
         final t = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6);
-        final reserve = kMinTextBelowBoard * t + (widget.extraBelow?.call(c) ?? 0) + kBoardGripHeight;
-        final size = math.max(120.0, math.min(c.maxWidth * scale, c.maxHeight - reserve));
+        // A tablet standing upright: a board from edge to edge would leave
+        // the text a strip at the bottom, so the text keeps its share of
+        // the height and stands in one column with the board (D-084).
+        final tablet = c.maxWidth >= AppBreakpoints.wide;
+        final text =
+            math.max(kMinTextBelowBoard * t, tablet ? c.maxHeight * AppBreakpoints.textShareBelowBoard : 0.0) +
+            (widget.extraBelow?.call(c) ?? 0);
+        final size = math.max(120.0, math.min(c.maxWidth * scale, c.maxHeight - text - widget.gripHeight));
+        final inset = tablet && size < c.maxWidth - 2 * AppSpacing.sm;
+        final gutter = inset ? math.max(0.0, (c.maxWidth - math.max(size, AppSizes.minPanelWidth)) / 2) : 0.0;
         return Column(
           children: [
+            if (inset) AppGap.v8,
             Center(
               child: SizedBox.square(dimension: size, child: widget.board),
             ),
             _grip(context, c.maxWidth, size, scale),
             Expanded(
-              child: widget.below(context, BoardGeometry(boardSize: size, wide: false, constraints: c)),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: widget.belowBleeds ? 0 : gutter),
+                child: widget.below(
+                  context,
+                  BoardGeometry(boardSize: size, wide: false, constraints: c, gutter: widget.belowBleeds ? gutter : 0),
+                ),
+              ),
             ),
           ],
         );
@@ -142,7 +178,7 @@ class _BoardLayoutState extends ConsumerState<BoardLayout> {
           setState(() => _drag = null);
         },
         child: SizedBox(
-          height: kBoardGripHeight,
+          height: widget.gripHeight,
           width: double.infinity,
           child: Center(
             child: Container(

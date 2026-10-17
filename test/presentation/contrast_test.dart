@@ -32,6 +32,7 @@ void main() {
         aa('error container', cs.onErrorContainer, cs.errorContainer);
         aa('secondary container', cs.onSecondaryContainer, cs.secondaryContainer);
         aa('on surface variant', cs.onSurfaceVariant, cs.surfaceContainerHigh);
+        aa('flame container', cs.onFlameContainer, cs.flameContainer);
       });
     }
   }

@@ -54,7 +54,7 @@ class RepertoireListScreen extends ConsumerWidget {
                 ],
               )
             : ListView.separated(
-                padding: AppInsets.page,
+                padding: AppInsets.page.inPage(context),
                 itemCount: list.length,
                 separatorBuilder: (_, _) => AppGap.v12,
                 itemBuilder: (_, i) => RepertoireCard(summary: list[i]),

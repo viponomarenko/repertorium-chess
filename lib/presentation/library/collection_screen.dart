@@ -7,7 +7,6 @@ import '../../data/db/database.dart';
 import '../../data/import/pgn_import_service.dart';
 import '../../data/repositories/library_repository.dart';
 import '../../domain/pgn/pgn_model.dart';
-import '../app/app.dart' show scaffoldMessengerKey;
 import '../app/providers.dart';
 import '../game/game_screen.dart';
 import '../repertoire/import_wizard_screen.dart';
@@ -78,8 +77,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
             await repo.restoreGames(rows);
           } catch (_) {
             // The collection was deleted in the meantime.
-            final m = scaffoldMessengerKey.currentState;
-            if (m != null && m.mounted) m.showSnackBar(SnackBar(content: Text(l.undoFailed)));
+            showNotice(l.undoFailed);
           }
         },
       ),
@@ -262,7 +260,10 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
                   children: [
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page, vertical: AppSpacing.xs),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.page,
+                        vertical: AppSpacing.xs,
+                      ).inPage(context),
                       child: Row(
                         children: [
                           for (final r in const ['1-0', '0-1', '1/2-1/2', '*'])
@@ -301,6 +302,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
                               ],
                             )
                           : ListView.builder(
+                              padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom).inPage(context),
                               itemCount: games.length,
                               itemBuilder: (context, i) => _GameTile(
                                 game: games[i],

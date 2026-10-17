@@ -48,11 +48,11 @@ class FakeEngine implements EngineService {
   @override
   String get name => 'fake';
 
-  EngineEval _eval(String fen) {
+  EngineEval _eval(String fen, {int multiPv = 1}) {
     final pos = tryPositionFromFen(fen)!;
     final moves = <String>[];
     var p = pos;
-    for (var i = 0; i < 6 && p.legalMoves.values.any((v) => v.isNotEmpty); i++) {
+    for (var i = 0; i < 12 && p.legalMoves.values.any((v) => v.isNotEmpty); i++) {
       final m = p.legalMoves.entries.firstWhere((e) => e.value.isNotEmpty);
       final mv = NormalMove(from: m.key, to: m.value.squares.first);
       moves.add(mv.uci);
@@ -62,14 +62,15 @@ class FakeEngine implements EngineService {
       fen: fen,
       depth: 12,
       done: true,
-      lines: [PvLine(multipv: 1, moves: moves, cp: 25)],
+      // As many lines as asked for, each a little worse.
+      lines: [for (var i = 1; i <= multiPv; i++) PvLine(multipv: i, moves: moves, cp: 30 - 5 * i)],
     );
   }
 
   @override
   Stream<EngineEval> analyze(String fen, EngineOptions options) {
     starts++;
-    return Stream.value(_eval(fen));
+    return Stream.value(_eval(fen, multiPv: options.multiPv));
   }
 
   @override
@@ -107,9 +108,10 @@ Future<TestApp> pumpApp(
   LibraryRepository Function(AppDatabase db)? libraryRepository,
   Size size = const Size(390, 844),
   double textScale = 1,
+  double pixelRatio = 3,
 }) async {
-  tester.view.physicalSize = size * 3;
-  tester.view.devicePixelRatio = 3;
+  tester.view.physicalSize = size * pixelRatio;
+  tester.view.devicePixelRatio = pixelRatio;
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
   addTearDown(tester.view.reset);
   addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);

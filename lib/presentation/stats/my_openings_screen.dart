@@ -202,7 +202,11 @@ class _MyOpeningsScreenState extends ConsumerState<MyOpeningsScreen> with Single
         children: [
           if (widget.embedded)
             Padding(
-              padding: const EdgeInsets.only(left: AppSpacing.md, top: AppSpacing.sm, right: AppSpacing.md),
+              padding: const EdgeInsets.only(
+                left: AppSpacing.md,
+                top: AppSpacing.sm,
+                right: AppSpacing.md,
+              ).inPage(context, width: AppSizes.maxMessageWidth),
               child: ChoiceSegments<int>(
                 options: [ChoiceOption(0, l.tabVariations), ChoiceOption(1, l.tabTree)],
                 selected: _tabs.index,
@@ -290,7 +294,7 @@ class _MyOpeningsScreenState extends ConsumerState<MyOpeningsScreen> with Single
     final l = context.l10n;
     final list = t.topVariations(plies: _plies);
     return ListView(
-      padding: const EdgeInsets.only(bottom: AppSpacing.listBottom),
+      padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
@@ -350,17 +354,23 @@ class _MyOpeningsScreenState extends ConsumerState<MyOpeningsScreen> with Single
                   padding: const EdgeInsets.only(right: AppSpacing.md),
                   child: sans.isEmpty
                       ? Text(l.start, style: context.tt.meta)
-                      : Row(
-                          children: [
-                            for (var i = 0; i < sans.length; i++)
-                              MoveChip(
-                                number: i.isEven ? '${i ~/ 2 + 1}. ' : '',
-                                san: sans[i],
-                                current: i == sans.length - 1,
-                                tapHeight: AppSizes.tapTarget,
-                                onTap: () => setState(() => _path = _path.sublist(0, i + 1)),
-                              ),
-                          ],
+                      : EntranceScope(
+                          child: Row(
+                            children: [
+                              for (var i = 0; i < sans.length; i++)
+                                // A move joining the path slides in (D-086).
+                                MoveEntrance(
+                                  key: ValueKey('$i ${sans[i]}'),
+                                  child: MoveChip(
+                                    number: i.isEven ? '${i ~/ 2 + 1}. ' : '',
+                                    san: sans[i],
+                                    current: i == sans.length - 1,
+                                    tapHeight: AppSizes.tapTarget,
+                                    onTap: () => setState(() => _path = _path.sublist(0, i + 1)),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                 ),
               ),

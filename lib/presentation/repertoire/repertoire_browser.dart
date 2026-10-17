@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart' hide PgnComment;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -25,6 +26,7 @@ import '../widgets/board_view.dart';
 import '../widgets/common.dart';
 import '../widgets/notation_view.dart';
 import '../widgets/san_text.dart';
+import '../widgets/spoken.dart';
 import 'repertoire_controller.dart';
 import 'repertoire_screen.dart' show confirmDiscardPending;
 import 'repertoire_tree.dart';
@@ -37,9 +39,6 @@ const kRepertoireExtraBelow = 42.0;
 /// The fade at the start of the path row, where older moves scroll away;
 /// also the room after the latest move.
 const _pathFade = AppSpacing.md;
-
-/// The column of the role icon in a row of the position's moves.
-const _roleColumn = 44.0;
 
 /// SAN line from the root for a path of repertoire moves.
 String pathToText(List<RepMove> path, RepertoireGraph g) {
@@ -229,6 +228,32 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
     await playAndAddLine(context, c, ucis, alreadyMessage: l.lineAlreadyInRepertoire);
   }
 
+  /// The engine's move becomes main; the notice offers to undo it.
+  Future<void> _applyEngine(PositionKey key) async {
+    if (!await confirmLeavePending(context, c) || !mounted) return;
+    final l = context.l10n;
+    final done = await c.applyEngineSuggestion(key);
+    if (done == null || !mounted) return;
+    showNotice(
+      l.engineApplied(done.best, done.old),
+      actionLabel: l.undo,
+      onAction: () => unawaited(c.restore(done.before, done.path)),
+    );
+  }
+
+  /// The user keeps their move; the notice offers to undo it.
+  Future<void> _keepMine(PositionKey key) async {
+    final l = context.l10n;
+    final main = c.graph!.mainMove(key);
+    final before = await c.dismissEngineFlag(key);
+    if (before == null || !mounted) return;
+    showNotice(
+      l.engineKept(main?.san ?? ''),
+      actionLabel: l.undo,
+      onAction: () => unawaited(c.setEngineFlag(key, before)),
+    );
+  }
+
   Future<void> _moveMenu(RepMove m) async {
     final l = context.l10n;
     final g = c.graph!;
@@ -413,7 +438,9 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
     final userTurn = pos.turn == g.color;
     final card = g.cards[key];
     final repPos = g.positions[key];
-    final flag = repPos == null ? null : EngineFlag.decode(repPos.engineFlag);
+    final decoded = repPos == null ? null : EngineFlag.decode(repPos.engineFlag);
+    // An answered flag ("keep my move") is no longer shown.
+    final flag = decoded != null && decoded.active && g.mainMove(key) != null ? decoded : null;
 
     final board = BoardView(
       position: pos,
@@ -434,7 +461,11 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
           Icon(icon, size: AppSizes.iconSm, color: color ?? theme.colorScheme.onSurfaceVariant),
           AppGap.h4,
           Expanded(child: text),
-          ?trailing,
+          // Shares the row with the text, never pushes it off the screen.
+          if (trailing != null)
+            Flexible(
+              child: Align(alignment: AlignmentDirectional.centerEnd, child: trailing),
+            ),
         ],
       ),
     );
@@ -448,37 +479,72 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
       // under the board costs board (D-074).
       _PathLine(
         c: c,
+        problems: widget.problemKeys.length,
         actions: [
           if (widget.enableTree)
-            PillSwitch(
+            IconSegmentedSwitch(
               key: const ValueKey('repertoire-view-switch'),
+              icons: const [AppIcons.list, AppIcons.repertoire],
               labels: [l.positionDetails, l.tabTree],
               selected: _treeMode ? 1 : 0,
               onChanged: (i) => setState(() => _treeMode = i == 1),
             ),
         ],
       ),
+      // The opening: its code in ink, the name in grey (D-095).
       if (opening != null)
         Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.page, right: AppSpacing.page, bottom: AppSpacing.xxs),
-          child: Text('${opening.eco} · ${opening.name}', style: small, maxLines: 1, overflow: TextOverflow.ellipsis),
-        ),
-      // Whose moves these are, and for the user's own: how well the move
-      // is known. One small line (it used to be a line and a header).
-      if (inRep)
-        infoLine(
-          userTurn ? AppIcons.card : AppIcons.opponentMove,
-          Text(
-            userTurn && (card != null || moves.isNotEmpty)
-                ? '${l.yourMoves} · ${cardStatus(card, l, fsrs, deferred: repPos?.conflictDeferred ?? false)}'
-                : (userTurn ? l.yourMoves : l.opponentMoves),
+          padding: const EdgeInsets.only(left: AppSpacing.page, right: AppSpacing.page),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: opening.eco,
+                  style: small.copyWith(fontWeight: context.tt.title.fontWeight, color: theme.colorScheme.onSurface),
+                ),
+                TextSpan(text: ' · ${opening.name}'),
+              ],
+            ),
             style: small,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          trailing: repPos?.conflictDeferred ?? false
-              ? TextButton(onPressed: () => c.setDeferred(key, false), child: Text(l.resolve))
-              : null,
+        ),
+      // Whose moves these are; for the user's own, how well the move is
+      // known sits on the right - a warm chip when it is time to review
+      // (D-095); for the opponent's, the header of the share column.
+      if (inRep)
+        Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.sm),
+          child: infoLine(
+            userTurn ? AppIcons.card : AppIcons.opponentMove,
+            Text(userTurn ? l.yourMoves : l.opponentMoves, style: small, maxLines: 1, overflow: TextOverflow.ellipsis),
+            trailing: repPos?.conflictDeferred ?? false
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(l.cardDeferred, style: small, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ),
+                      TextButton(onPressed: () => c.setDeferred(key, false), child: Text(l.resolve)),
+                    ],
+                  )
+                : Padding(
+                    padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.sm),
+                    child: userTurn
+                        ? (card != null || moves.isNotEmpty
+                              ? _CardState(
+                                  text: cardStatus(card, l, fsrs),
+                                  due:
+                                      card != null &&
+                                      !card.suspended &&
+                                      !card.srs.isNew &&
+                                      fsrs.isDue(card.srs, DateTime.now()),
+                                )
+                              : null)
+                        : (moves.isEmpty ? null : Text(l.opponentShareHeader, style: small)),
+                  ),
+          ),
         ),
       if (inRep && into.length > 1)
         infoLine(
@@ -494,7 +560,7 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
             style: small,
           ),
         ),
-      if (flag != null)
+      if (flag != null) ...[
         infoLine(
           AppIcons.warning,
           MovesText(
@@ -503,6 +569,27 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
           ),
           color: theme.colorScheme.warning,
         ),
+        // The two ways out of the flag, each undoable (D-090).
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.page, right: AppSpacing.sm, bottom: AppSpacing.xs),
+          child: Wrap(
+            spacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FilledButton.tonal(
+                style: AppButtonSize.compact,
+                onPressed: () => unawaited(_applyEngine(key)),
+                child: MovesText(l.engineApply(flag.bestSan)),
+              ),
+              TextButton(
+                style: AppButtonSize.compact,
+                onPressed: () => unawaited(_keepMine(key)),
+                child: Text(l.engineKeepMine),
+              ),
+            ],
+          ),
+        ),
+      ],
       if (inRep && repPos != null && repPos.comment.isNotEmpty)
         InkWell(
           onTap: editComment,
@@ -517,7 +604,17 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
           child: Text(userTurn ? l.noOwnMoveHint : l.noOpponentMovesHint, style: small),
         ),
       for (final m in moves)
-        _MoveTile(m: m, g: g, prefix: moveNumberPrefix(pos), onTap: () => c.go(m), onMenu: () => _moveMenu(m)),
+        _MoveTile(
+          m: m,
+          g: g,
+          prefix: moveNumberPrefix(pos),
+          share: () {
+            final total = moves.fold<int>(0, (a, x) => a + x.weight);
+            return total == 0 ? 0.0 : m.weight / total;
+          }(),
+          onTap: () => c.go(m),
+          onMenu: () => _moveMenu(m),
+        ),
       ...widget.extraPanels,
     ];
 
@@ -535,7 +632,7 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
           l.trainFromHereLong,
           BarButton(
             icon: AppIcons.drill,
-            label: l.trainFromHere,
+            label: l.trainFromHereShort,
             onTap: canTrain
                 ? () => context.push(
                     '/train',
@@ -607,49 +704,84 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
       padding: EdgeInsets.zero,
       children: widget.enableTree ? details.skip(1).toList() : details,
     );
-    final panel = widget.enableTree
-        ? Column(
-            children: [
-              details.first,
-              Expanded(
-                // The other view fades in; nothing moves (the board, the
-                // switch and the rows keep their places).
-                child: FadeOnChange(
-                  trigger: _treeMode,
-                  child: IndexedStack(
-                    index: _treeMode ? 1 : 0,
-                    children: [
-                      list,
-                      RepertoireTree(
-                        c: c,
-                        onOpen: _selectTreePosition,
-                        problemKeys: widget.problemKeys,
-                        tools: _treeTools,
+    // The pinned tools go from edge to edge; the rest keeps to the column
+    // of the board (a tablet in portrait).
+    Widget panel(double gutter) {
+      final inColumn = EdgeInsets.symmetric(horizontal: gutter);
+      return widget.enableTree
+          ? Column(
+              children: [
+                Padding(padding: inColumn, child: details.first),
+                Expanded(
+                  // The other view fades in; nothing moves (the board, the
+                  // switch and the rows keep their places).
+                  child: Padding(
+                    padding: inColumn,
+                    child: FadeOnChange(
+                      trigger: _treeMode,
+                      child: IndexedStack(
+                        index: _treeMode ? 1 : 0,
+                        children: [
+                          list,
+                          RepertoireTree(
+                            c: c,
+                            onOpen: _selectTreePosition,
+                            problemKeys: widget.problemKeys,
+                            tools: _treeTools,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-              tools,
-            ],
-          )
-        : Column(
-            children: [
-              Expanded(child: list),
-              tools,
-            ],
-          );
+                tools,
+              ],
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: Padding(padding: inColumn, child: list),
+                ),
+                tools,
+              ],
+            );
+    }
+
     // Same board geometry as every other screen with a board (D-052).
+    // With a keyboard (a tablet): the arrows walk the line, as in the
+    // analysis.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
+          if (c.path.isNotEmpty || c.pending.isNotEmpty) c.back();
+        },
+        const SingleActivator(LogicalKeyboardKey.arrowRight): () {
+          if (c.pending.isEmpty && moves.isNotEmpty) c.go(moves.first);
+        },
+        const SingleActivator(LogicalKeyboardKey.arrowUp): () async {
+          if (await confirmLeavePending(context, c)) c.toRoot();
+        },
+      },
+      child: Focus(autofocus: true, child: _layout(board, pendingBar, panel)),
+    );
+  }
+
+  Widget _layout(Widget board, Widget? pendingBar, Widget Function(double gutter) panel) {
     return BoardLayout(
       board: board,
       // Room for the path, the Moves/Tree switch, a couple of moves and the
       // pinned tools: on a phone the board is a little smaller here than a
       // full-width one, and the tools never need scrolling to (D-072).
       extraBelow: (_) => kRepertoireExtraBelow,
+      belowBleeds: true,
       below: (context, g) => Column(
         children: [
-          ?pendingBar,
-          Expanded(child: panel),
+          if (pendingBar != null)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: g.gutter),
+              child: pendingBar,
+            ),
+          Expanded(child: panel(g.gutter)),
         ],
       ),
     );
@@ -697,42 +829,156 @@ class _PendingBar extends StatelessWidget {
   }
 }
 
-/// The way to this position as one line of notation ("1. e4 e5 2. Nf3"):
-/// a move jumps back there; the home icon goes to the start. Moves not in
-/// the repertoire yet follow in the accent colour. The back arrow stays put
-/// clear of the screen edge; the moves scroll, ending at the latest one.
+/// The row under the board (D-095), 48 high. At the start position: "Start
+/// position" and how much is learned (and how many problems there are) in
+/// place of the inactive back/start buttons. After moves: a white capsule
+/// with back and start, a white capsule with the way here as notation (a
+/// move jumps back there; moves not in the repertoire yet follow in the
+/// accent colour; the moves scroll, ending at the latest one), then the
+/// [actions] (the Moves / Tree switch).
 class _PathLine extends ConsumerWidget {
-  const _PathLine({required this.c, this.actions = const []});
+  const _PathLine({required this.c, this.problems = 0, this.actions = const []});
   final RepertoireController c;
+
+  /// Problems of the repertoire, named at the start position.
+  final int problems;
 
   /// Small tools at the end of the row.
   final List<Widget> actions;
+
+  static const double _capsule = 36;
+  static const double _current = 26;
+  static const double _divider = 16;
+  static const double _moveDivider = 12;
+  static const double _backIcon = 18;
+  static const double _startIcon = 17;
+  static const double _numberAlpha = 0.7;
+
+  /// Around a move in the path, around a divider between full moves, and
+  /// the path's right inner padding.
+  static const double _movePadding = 5;
+  static const double _dividerGap = 3;
+  static const double _pathEnd = 5;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final g = c.graph!;
-    final last = c.pending.isEmpty ? c.path.length - 1 : -1;
+    final atStart = c.path.isEmpty && c.pending.isEmpty;
+    final tools = [
+      for (final a in actions) ...[AppGap.h8, a],
+    ];
 
-    // Same fonts, sizes and chip as the notation (D-052).
-    Widget token(String number, String san, {required bool current, bool pending = false, VoidCallback? onTap}) =>
-        MoveChip(
-          number: number,
-          san: san,
-          current: current,
-          color: pending ? theme.colorScheme.secondary : null,
-          onTap: onTap,
-          tapHeight: AppSizes.tapTarget,
-        );
+    if (atStart) {
+      final summary = ref.watch(repertoiresProvider).value?.where((r) => r.row.id == c.id).firstOrNull;
+      final facts = [
+        if (summary != null) l.repertoireCounts(summary.learned, summary.cards),
+        if (problems > 0) l.problemsCount(problems),
+      ].join(' · ');
+      // At least a finger high; with large text the two lines grow it.
+      return ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: AppSizes.tapTarget),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.startPosition, style: context.tt.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    if (facts.isNotEmpty)
+                      Text(facts, style: context.tt.meta, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+              ...tools,
+            ],
+          ),
+        ),
+      );
+    }
+
+    final last = c.pending.isEmpty ? c.path.length - 1 : -1;
+    // A move joining the path (just played) slides in (D-086).
+    Widget token(
+      String key,
+      String number,
+      String san, {
+      required bool current,
+      bool pending = false,
+      VoidCallback? onTap,
+    }) {
+      final fg = current ? cs.onPrimary : (pending ? cs.secondary : cs.onSurface);
+      final numberColor = current ? cs.onPrimary.withValues(alpha: _numberAlpha) : cs.onSurfaceVariant;
+      final f = ref.watch(notationFormatterProvider);
+      final text = Text.rich(
+        TextSpan(
+          children: [
+            if (number.isNotEmpty)
+              TextSpan(
+                text: number,
+                style: context.tt.moveNumber.copyWith(color: numberColor),
+              ),
+            ...f.spans(san, context.tt.moveMain.copyWith(color: fg)),
+          ],
+        ),
+        maxLines: 1,
+        softWrap: false,
+      );
+      return MoveEntrance(
+        key: ValueKey(key),
+        child: Semantics(
+          button: onTap != null,
+          selected: current,
+          label: '$number${spokenSan(san, l)}'.trim(),
+          excludeSemantics: true,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: SizedBox(
+              height: AppSizes.tapTarget,
+              child: Center(
+                widthFactor: 1,
+                child: current
+                    ? Container(
+                        height: _current,
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md - AppSpacing.xxs),
+                        decoration: BoxDecoration(color: cs.primary, borderRadius: AppRadius.full),
+                        child: Center(widthFactor: 1, child: text),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: _movePadding),
+                        child: text,
+                      ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget moveDivider() => Container(
+      width: AppSizes.hairline,
+      height: _moveDivider,
+      margin: const EdgeInsets.symmetric(horizontal: _dividerGap),
+      color: cs.secondaryContainer,
+    );
 
     final items = <Widget>[];
     for (var i = 0; i < c.path.length; i++) {
       final m = c.path[i];
       final pos = positionFromFen(g.positions[m.fromKey]!.fen);
-      final number = pos.turn == Side.white ? '${pos.fullmoves}. ' : (i == 0 ? '${pos.fullmoves}... ' : '');
+      final white = pos.turn == Side.white;
+      final number = white ? '${pos.fullmoves}. ' : (i == 0 ? '${pos.fullmoves}... ' : '');
+      // Between full moves: before each move number of White.
+      if (white && i > 0) items.add(moveDivider());
       items.add(
         token(
+          '$i ${m.san}',
           number,
           m.san,
           current: i == last,
@@ -742,145 +988,282 @@ class _PathLine extends ConsumerWidget {
         ),
       );
     }
-    for (final p in c.pending) {
-      items.add(token('', p.$2, current: false, pending: true));
+    for (var i = 0; i < c.pending.length; i++) {
+      items.add(token('p$i ${c.pending[i].$2}', '', c.pending[i].$2, current: false, pending: true));
     }
-    return LayoutBuilder(
-      builder: (context, row) => Row(
-        children: [
-          AppGap.h4,
-          IconButton(
-            tooltip: l.undoMove,
-            onPressed: c.path.isEmpty && c.pending.isEmpty ? null : c.back,
-            icon: const Icon(AppIcons.back, size: AppSizes.iconMd),
+
+    final capsule = BoxDecoration(
+      color: cs.surfaceContainerLow,
+      borderRadius: AppRadius.full,
+      border: Border.all(color: cs.secondaryContainer, width: AppSizes.hairline),
+    );
+    Widget navButton(String tooltip, IconData icon, double size, VoidCallback onTap) => Semantics(
+      button: true,
+      label: tooltip,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: tooltip,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: SizedBox(
+            width: AppSizes.tapTarget,
+            height: AppSizes.tapTarget,
+            child: Icon(icon, size: size, color: cs.onSurface),
           ),
-          IconButton(
-            tooltip: l.start,
-            onPressed: c.path.isEmpty && c.pending.isEmpty
-                ? null
-                : () async {
-                    if (await confirmLeavePending(context, c)) c.toRoot();
-                  },
-            icon: const Icon(AppIcons.start, size: AppSizes.iconMd),
-          ),
-          Expanded(
-            child: ShaderMask(
-              // Any opaque colour: only its alpha is used (dstIn).
-              shaderCallback: (r) =>
-                  LinearGradient(colors: [Colors.transparent, theme.colorScheme.surface])
-                      .createShader(Rect.fromLTWH(0, 0, _pathFade, r.height)),
-              blendMode: BlendMode.dstIn,
-              child: LayoutBuilder(
-                builder: (context, cons) => SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  reverse: true,
-                  padding: const EdgeInsets.only(left: AppSpacing.sm, right: _pathFade),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minWidth: math.max(0, cons.maxWidth - AppSpacing.sm - _pathFade)),
-                    child: items.isEmpty
-                        ? Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(l.start, style: context.tt.meta),
-                          )
-                        : Row(children: items),
+        ),
+      ),
+    );
+    return SizedBox(
+      height: AppSizes.tapTarget,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
+        child: Row(
+          children: [
+            // Back and start in one capsule; each a full finger target.
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned.fill(
+                  top: (AppSizes.tapTarget - _capsule) / 2,
+                  bottom: (AppSizes.tapTarget - _capsule) / 2,
+                  child: DecoratedBox(decoration: capsule),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    navButton(l.undoMove, AppIcons.back, _backIcon, c.back),
+                    Container(width: AppSizes.hairline, height: _divider, color: cs.secondaryContainer),
+                    navButton(l.start, AppIcons.start, _startIcon, () async {
+                      if (await confirmLeavePending(context, c)) c.toRoot();
+                    }),
+                  ],
+                ),
+              ],
+            ),
+            AppGap.h8,
+            Expanded(
+              child: Container(
+                height: _capsule,
+                decoration: capsule,
+                clipBehavior: Clip.antiAlias,
+                child: OverflowBox(
+                  maxHeight: AppSizes.tapTarget,
+                  child: ShaderMask(
+                    // Any opaque colour: only its alpha is used (dstIn).
+                    shaderCallback: (r) => LinearGradient(
+                      colors: [Colors.transparent, cs.surface],
+                    ).createShader(Rect.fromLTWH(0, 0, _pathFade, r.height)),
+                    blendMode: BlendMode.dstIn,
+                    child: LayoutBuilder(
+                      builder: (context, cons) => SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        reverse: true,
+                        padding: const EdgeInsets.only(left: AppSpacing.md, right: _pathEnd),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minWidth: math.max(0, cons.maxWidth - AppSpacing.md - _pathEnd)),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: EntranceScope(
+                              child: Row(mainAxisSize: MainAxisSize.min, children: items),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          // At most two thirds of the room after the buttons: in a narrow
-          // panel with a large text the words are cut, the row never overflows.
-          for (final a in actions)
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: math.max(0, row.maxWidth - 2 * AppSizes.tapTarget) * 2 / 3),
-              child: a,
-            ),
-          AppGap.h4,
-        ],
+            ...tools,
+          ],
+        ),
       ),
     );
   }
 }
 
+/// How well the user's move here is known (D-095): a warm chip when it is
+/// time to review it, otherwise the state in grey.
+class _CardState extends StatelessWidget {
+  const _CardState({required this.text, required this.due});
+  final String text;
+  final bool due;
+
+  static const double _chip = 20;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    if (!due) return Text(text, style: context.tt.meta, maxLines: 1, overflow: TextOverflow.ellipsis);
+    return Container(
+      height: _chip,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      decoration: BoxDecoration(color: cs.flameContainer, borderRadius: AppRadius.full),
+      child: Center(
+        widthFactor: 1,
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.2,
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onFlameContainer),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A move from this position, one row 36 high (D-046, D-095). The
+/// opponent's: the move with its weight, a bar of its share of the
+/// opponent's moves here and the percentage. The user's: the role icon,
+/// the move and, on the right, its comment, "end of line" or its role. The
+/// row opens the move; its menu is the long press or the dots at the end.
 class _MoveTile extends ConsumerWidget {
-  const _MoveTile({required this.m, required this.g, required this.prefix, required this.onTap, required this.onMenu});
+  const _MoveTile({
+    required this.m,
+    required this.g,
+    required this.prefix,
+    required this.onTap,
+    required this.onMenu,
+    this.share = 0,
+  });
   final RepMove m;
   final RepertoireGraph g;
   final String prefix;
   final VoidCallback onTap;
   final VoidCallback onMenu;
 
+  /// This move's share of the opponent's moves from the position.
+  final double share;
+
+  /// The opponent's move with its weight; the share bar's thickness and the
+  /// percentage column.
+  static const double _moveColumn = 104;
+  static const double _bar = 6;
+  static const double _percent = 34;
+  static const double _menuWidth = 44;
+  static const double _roleIcon = 24;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final transposes = g.movesTo(m.toKey).length > 1;
     final subtreeSize = g.movesFrom(m.toKey).length;
+    final opponent = m.role == MoveRole.opponent;
     final (icon, color, label) = switch (m.role) {
       // Monochrome: the icon shape tells main from alternative.
-      MoveRole.main => (AppIcons.mainMove, theme.colorScheme.onSurface, l.roleMain),
-      MoveRole.alternative => (AppIcons.alternativeMove, theme.colorScheme.onSurfaceVariant, l.roleAlternative),
-      MoveRole.opponent => (AppIcons.opponentMove, theme.colorScheme.onSurfaceVariant, l.weightShort(m.weight)),
+      MoveRole.main => (AppIcons.mainMove, cs.onSurface, l.roleMain),
+      MoveRole.alternative => (AppIcons.alternativeMove, cs.onSurfaceVariant, l.roleAlternative),
+      MoveRole.opponent => (AppIcons.opponentMove, cs.onSurfaceVariant, l.weightShort(m.weight)),
     };
-    final note = m.comment.isNotEmpty ? m.comment : (subtreeSize == 0 ? l.lineEnds : '');
+    final note = m.comment.isNotEmpty ? m.comment : (subtreeSize == 0 ? l.lineEnds : label);
     final paused = g.suspension(m.toKey).all;
     final small = context.tt.meta;
-    // One dense row, as high as a row of notation (36, D-046): role icon,
-    // the move, its note on the same line. The row is one target for
-    // "open"; its menu is the long press or the dots at the end.
+    final marks = [
+      if (transposes)
+        Tooltip(
+          message: l.transposition,
+          child: Icon(AppIcons.transposition, size: AppSizes.iconSm, color: cs.tertiary),
+        ),
+      if (paused)
+        Tooltip(
+          message: l.branchPaused,
+          child: Icon(AppIcons.suspend, size: AppSizes.iconSm, color: cs.onSurfaceVariant),
+        ),
+    ];
+    final menu = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onMenu,
+      child: Tooltip(
+        message: l.more,
+        child: const SizedBox(
+          width: _menuWidth,
+          height: kMoveChipMinHeight,
+          child: Icon(AppIcons.moreVertical, size: AppSizes.iconMd),
+        ),
+      ),
+    );
+    final row = opponent
+        ? Row(
+            children: [
+              AppGap.h16,
+              SizedBox(
+                width: _moveColumn,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Flexible(
+                      child: MoveText(number: prefix, san: m.san),
+                    ),
+                    AppGap.h8,
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: small.tabular,
+                        maxLines: 1,
+                        overflow: TextOverflow.clip,
+                        softWrap: false,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              for (final mark in marks) ...[mark, AppGap.h4],
+              Expanded(
+                child: AppProgressBar(value: share, height: _bar, color: cs.secondary),
+              ),
+              SizedBox(
+                width: _percent,
+                child: Text(
+                  context.fmtPercent(share),
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  style: context.tt.title.tabular,
+                ),
+              ),
+              menu,
+            ],
+          )
+        : Row(
+            children: [
+              AppGap.h16,
+              SizedBox(
+                width: _roleIcon,
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Tooltip(
+                    message: label,
+                    child: Icon(icon, size: AppSizes.iconSm, color: color),
+                  ),
+                ),
+              ),
+              MoveText(number: prefix, san: m.san),
+              for (final mark in marks) ...[AppGap.h4, mark],
+              AppGap.h8,
+              Expanded(
+                child: MovesText(note, style: small, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+              menu,
+            ],
+          );
     return Semantics(
       button: true,
-      label: '$prefix${m.san}',
+      label: opponent ? '$prefix${m.san}, ${context.fmtPercent(share)}' : '$prefix${m.san}',
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
         onLongPress: onMenu,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: kMoveChipMinHeight),
-          child: Row(
-            children: [
-              SizedBox(
-                width: _roleColumn,
-                child: Tooltip(
-                  message: label,
-                  child: Icon(icon, size: AppSizes.iconMd, color: color),
-                ),
-              ),
-              MoveText(number: prefix, san: m.san),
-              if (transposes) ...[
-                AppGap.h4,
-                Tooltip(
-                  message: l.transposition,
-                  child: Icon(AppIcons.transposition, size: AppSizes.iconSm, color: theme.colorScheme.tertiary),
-                ),
-              ],
-              AppGap.h8,
-              Expanded(
-                child: MovesText(note, style: small, maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-              if (paused) ...[
-                Tooltip(
-                  message: l.branchPaused,
-                  child: Icon(AppIcons.suspend, size: AppSizes.iconSm, color: theme.colorScheme.onSurfaceVariant),
-                ),
-                AppGap.h8,
-              ],
-              if (m.role == MoveRole.opponent) Text(label, style: small.tabular),
-              // As wide as a finger, as high as the row.
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onMenu,
-                child: Tooltip(
-                  message: l.more,
-                  child: const SizedBox(
-                    width: AppSizes.tapTarget,
-                    height: kMoveChipMinHeight,
-                    child: Icon(AppIcons.moreVertical, size: AppSizes.iconMd),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: row,
         ),
       ),
     );

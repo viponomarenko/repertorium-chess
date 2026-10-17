@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tabiya/presentation/repertoire/repertoire_tree.dart';
 import 'package:tabiya/presentation/widgets/board_view.dart';
 
+import 'audit_regression_test.dart' show loadAuditFonts;
 import 'harness.dart';
 import 'screens_guidelines_test.dart' show seedRepertoire;
 
@@ -14,9 +15,12 @@ void main() {
       find.descendant(of: find.byType(RepertoireTree), matching: find.text(text, findRichText: true));
 
   testWidgets('lines are rows between branching points', (tester) async {
+    // Real fonts: a row is one line now (D-096), so what fits depends on
+    // the glyphs' widths.
+    await tester.runAsync(loadAuditFonts);
     final app = await pumpApp(tester, seed: seedRepertoire);
     await goTo(tester, '/repertoires/1');
-    await tapText(tester, 'Дерево');
+    await tapTooltip(tester, 'Дерево');
     // The board is full width; pulling the grip up gives the tree room.
     await tester.drag(find.byKey(const ValueKey('board-size-grip')), const Offset(0, -200));
     await settle(tester);
@@ -31,7 +35,7 @@ void main() {
     final nf3 = tester.getTopLeft(move('2. Nf3').first);
     final bb5 = tester.getTopLeft(move('3. Bb5'));
     expect(e5.dx, greaterThan(e4.dx), reason: 'continuations are indented');
-    // A line without branches runs as text (wrapping, not a staircase).
+    // A line without branches runs as one line of text (not a staircase).
     expect(nf3.dy, e5.dy);
     expect(bb5.dx, anyOf(greaterThan(nf3.dx), e5.dx));
 
@@ -59,8 +63,8 @@ void main() {
       expect(scroll.offset, offset);
     }
     expect(tester.widget<BoardView>(find.byType(BoardView)).position.board.pieceAt(Square.b5)?.role, Role.bishop);
-    await tapText(tester, 'Ходи');
-    await tapText(tester, 'Дерево');
+    await tapTooltip(tester, 'Ходи');
+    await tapTooltip(tester, 'Дерево');
     expect(move('3. Bb5'), findsOneWidget);
     expect(move('1... c5'), findsOneWidget);
     expect(tester.getSemantics(move('3. Bb5')), isSemantics(isSelected: true));
@@ -80,13 +84,14 @@ void main() {
         final fixedElements = [
           find.byType(BoardView),
           find.byKey(const ValueKey('repertoire-view-switch')),
-          find.text('Ходи'),
-          find.text('Дерево'),
-          find.byTooltip('Початок'),
+          find.byTooltip('Ходи'),
+          find.byTooltip('Дерево'),
+          // The start position names itself where back/start would be.
+          find.text('Початкова позиція'),
         ];
         final bounds = fixedElements.map(tester.getRect).toList();
         for (final label in ['Дерево', 'Ходи', 'Дерево']) {
-          await tester.tap(find.text(label));
+          await tester.tap(find.byTooltip(label));
           for (var frame = 0; frame < 12; frame++) {
             await tester.pump(const Duration(milliseconds: 40));
             for (var i = 0; i < fixedElements.length; i++) {

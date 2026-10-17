@@ -435,7 +435,7 @@ class _ImportFlowScreenState extends ConsumerState<ImportFlowScreen> {
     Widget tile(IconData icon, String title, String sub, VoidCallback onTap) =>
         ListTile(leading: Icon(icon), title: Text(title), subtitle: Text(sub), onTap: onTap);
     return ListView(
-      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.listBottom),
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.listBottom).inPage(context),
       children: [
         if (_error != null) ...[
           Padding(
@@ -517,66 +517,64 @@ class _ImportFlowScreenState extends ConsumerState<ImportFlowScreen> {
     return Column(
       children: [
         Expanded(
-          child: MaxWidth(
-            child: ListView(
-              padding: AppInsets.page,
-              children: [
-                SectionCard(
-                  title: l.foundGames(r.games.length),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (errors.isEmpty)
-                        StatusLine(icon: AppIcons.okFilled, text: l.noErrors, tone: Tone.success)
-                      else
-                        // Nothing is thrown away: say where the rest went.
-                        StatusLine(
-                          icon: AppIcons.warning,
-                          text: '${l.gamesWithErrors(errors.length)} ${l.unreadMovesKept}',
-                          tone: Tone.error,
+          child: ListView(
+            padding: AppInsets.page.inPage(context),
+            children: [
+              SectionCard(
+                title: l.foundGames(r.games.length),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (errors.isEmpty)
+                      StatusLine(icon: AppIcons.okFilled, text: l.noErrors, tone: Tone.success)
+                    else
+                      // Nothing is thrown away: say where the rest went.
+                      StatusLine(
+                        icon: AppIcons.warning,
+                        text: '${l.gamesWithErrors(errors.length)} ${l.unreadMovesKept}',
+                        tone: Tone.error,
+                      ),
+                    if (_bytes != null) ...[
+                      // A sample of the file's text, so a wrong encoding
+                      // shows before saving, next to the way to fix it.
+                      if (_preview(r) case final p?) ...[
+                        AppGap.v8,
+                        Text(
+                          p,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
-                      if (_bytes != null) ...[
-                        // A sample of the file's text, so a wrong encoding
-                        // shows before saving, next to the way to fix it.
-                        if (_preview(r) case final p?) ...[
-                          AppGap.v8,
-                          Text(
-                            p,
-                            maxLines: 4,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                          ),
-                        ],
-                        AppGap.v4,
-                        _showEncoding
-                            ? _encodingPicker(context)
-                            : TextButton(
-                                onPressed: () => setState(() => _showEncoding = true),
-                                child: Text(l.textLooksWrong),
-                              ),
                       ],
+                      AppGap.v4,
+                      _showEncoding
+                          ? _encodingPicker(context)
+                          : TextButton(
+                              onPressed: () => setState(() => _showEncoding = true),
+                              child: Text(l.textLooksWrong),
+                            ),
                     ],
-                  ),
+                  ],
                 ),
-                if (errors.isNotEmpty)
-                  AppExpansionTile(
-                    leading: Icon(AppIcons.warning, color: theme.colorScheme.error),
-                    title: Text(l.problemsList),
-                    subtitle: Text(l.problemsListHint),
-                    children: [
-                      for (final g in errors.take(200))
-                        ListTile(
-                          title: Text(
-                            '${l.gameN(r.games.indexOf(g) + 1)}: '
-                            '${const {'', '?', '? - ?'}.contains(g.title.trim()) ? l.untitledGame : g.title}',
-                          ),
-                          subtitle: Text(g.issues.map((i) => '${l.line} ${localizedIssue(l, i)}').join('\n')),
+              ),
+              if (errors.isNotEmpty)
+                AppExpansionTile(
+                  leading: Icon(AppIcons.warning, color: theme.colorScheme.error),
+                  title: Text(l.problemsList),
+                  subtitle: Text(l.problemsListHint),
+                  children: [
+                    for (final g in errors.take(200))
+                      ListTile(
+                        title: Text(
+                          '${l.gameN(r.games.indexOf(g) + 1)}: '
+                          '${const {'', '?', '? - ?'}.contains(g.title.trim()) ? l.untitledGame : g.title}',
                         ),
-                    ],
-                  ),
-              ],
-            ),
+                        subtitle: Text(g.issues.map((i) => '${l.line} ${localizedIssue(l, i)}').join('\n')),
+                      ),
+                  ],
+                ),
+            ],
           ),
         ),
         StickyActionBar(

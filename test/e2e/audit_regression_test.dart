@@ -36,8 +36,8 @@ Matcher _golden(String path) => Platform.isMacOS ? matchesGoldenFile(path) : any
 
 Future<void> loadAuditFonts() async {
   final families = {
-    'Roboto': ['assets/fonts/google_sans/GoogleSans[GRAD,opsz,wght].ttf'],
-    'GoogleSans': ['assets/fonts/google_sans/GoogleSans[GRAD,opsz,wght].ttf'],
+    'Roboto': ['assets/fonts/exo2/Exo2[wght].ttf'],
+    'Exo2': ['assets/fonts/exo2/Exo2[wght].ttf'],
     'GoogleSansCode': ['assets/fonts/google_sans_code/GoogleSansCode[wght].ttf'],
     'TabiyaSymbols': ['assets/fonts/noto_sans_math/TabiyaSymbols-Regular.ttf'],
     'packages/bootstrap_icons/BootstrapIcons': ['packages/bootstrap_icons/fonts/BootstrapIcons.ttf'],

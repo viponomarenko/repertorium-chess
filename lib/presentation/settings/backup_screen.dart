@@ -165,7 +165,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         body: AbsorbPointer(
           absorbing: _busy,
           child: ListView(
-            padding: const EdgeInsets.only(bottom: AppSpacing.listBottom),
+            padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
             children: [
               if (_busy) const LinearProgressIndicator(),
               Padding(

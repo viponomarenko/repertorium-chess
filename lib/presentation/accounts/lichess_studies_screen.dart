@@ -50,7 +50,7 @@ class LichessStudiesScreen extends ConsumerWidget {
         data: (list) => list.isEmpty
             ? EmptyState(icon: AppIcons.openings, title: l.noStudies)
             : ListView.builder(
-                padding: const EdgeInsets.only(bottom: AppSpacing.listBottom),
+                padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
                 itemCount: list.length,
                 itemBuilder: (context, i) {
                   final s = list[i];

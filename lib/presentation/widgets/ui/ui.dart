@@ -7,4 +7,5 @@ export 'basics.dart';
 export 'components.dart';
 export 'menu.dart';
 export 'motion.dart';
+export 'notice.dart';
 export 'sheets.dart';

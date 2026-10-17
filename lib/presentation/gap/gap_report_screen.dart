@@ -173,7 +173,7 @@ class _GapReportScreenState extends ConsumerState<GapReportScreen> {
           if (all.isEmpty) return _empty(context);
           final groups = _group(all);
           return ListView(
-            padding: const EdgeInsets.only(bottom: AppSpacing.listBottom),
+            padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.page, top: AppSpacing.sm, right: AppSpacing.page),

@@ -14,6 +14,7 @@ import '../theme/app_icons.dart';
 import '../widgets/board_view.dart';
 import '../widgets/common.dart';
 import '../widgets/san_text.dart';
+import 'opening_picker.dart';
 
 /// Catalog of opening names / ECO codes (F-THEORY-02).
 class OpeningsScreen extends ConsumerStatefulWidget {
@@ -44,7 +45,10 @@ class _OpeningsScreenState extends ConsumerState<OpeningsScreen> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page, vertical: AppSpacing.sm),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.page,
+                  vertical: AppSpacing.sm,
+                ).inPage(context),
                 child: TextField(
                   decoration: InputDecoration(prefixIcon: const Icon(AppIcons.search), hintText: l.openingsSearchHint),
                   onChanged: (v) => setState(() => _q = v),
@@ -52,16 +56,11 @@ class _OpeningsScreenState extends ConsumerState<OpeningsScreen> {
               ),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.listBottom),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
                   itemCount: results.length,
                   itemBuilder: (context, i) {
                     final o = results[i];
-                    return ListTile(
-                      leading: AppAvatar(text: o.eco),
-                      title: Text(o.name),
-                      subtitle: MovesText(_moves(o), maxLines: 2, overflow: TextOverflow.ellipsis),
-                      onTap: () => _open(o),
-                    );
+                    return OpeningTile(opening: o, onTap: () => _open(o));
                   },
                 ),
               ),
@@ -72,14 +71,7 @@ class _OpeningsScreenState extends ConsumerState<OpeningsScreen> {
     );
   }
 
-  String _moves(OpeningInfo o) {
-    final sb = StringBuffer();
-    for (var i = 0; i < o.moves.length; i++) {
-      if (i.isEven) sb.write('${i ~/ 2 + 1}. ');
-      sb.write('${o.moves[i]} ');
-    }
-    return sb.toString().trim();
-  }
+  String _moves(OpeningInfo o) => openingMovesText(o);
 
   Future<void> _open(OpeningInfo o) async {
     final l = context.l10n;

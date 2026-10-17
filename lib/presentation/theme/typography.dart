@@ -12,14 +12,14 @@ import 'package:flutter/material.dart';
 
 /// Bundled font families (T-01, T-03).
 abstract final class AppFonts {
-  /// Google Sans (variable, wght 400…700) — every text in the app.
-  static const sans = 'GoogleSans';
+  /// Exo 2 (variable, wght 400…700) — every text in the app.
+  static const sans = 'Exo2';
 
   /// Google Sans Code (variable) — raw FEN / PGN only. It has no Cyrillic,
-  /// so comments in raw PGN fall back to Google Sans.
+  /// so comments in raw PGN fall back to Exo 2.
   static const mono = 'GoogleSansCode';
 
-  /// Subset of Noto Sans Math with NAG symbols missing in Google Sans (T-04).
+  /// Subset of Noto Sans Math with NAG symbols missing in Exo 2 (T-04).
   static const fallback = <String>['TabiyaSymbols'];
 
   static const monoFallback = <String>[sans, ...fallback];
@@ -170,20 +170,21 @@ class TabiyaText extends ThemeExtension<TabiyaText> {
     required this.meta,
     required this.value,
     required this.control,
+    required this.hero,
   });
 
   final NotationSize notationSize;
 
-  /// Main-line move: Google Sans 600, onSurface, tabular figures (T-10).
+  /// Main-line move: Exo 2 600, onSurface, tabular figures (T-10).
   final TextStyle moveMain;
 
-  /// Move number `12.` / `12...`: Google Sans 400, onSurfaceVariant.
+  /// Move number `12.` / `12...`: Exo 2 400, onSurfaceVariant.
   final TextStyle moveNumber;
 
-  /// Comment to a move: Google Sans 400, onSurfaceVariant, no italics (T-12).
+  /// Comment to a move: Exo 2 400, onSurfaceVariant, no italics (T-12).
   final TextStyle comment;
 
-  /// Variation move (Google Sans 400); color per depth from [variationColors].
+  /// Variation move (Exo 2 400); color per depth from [variationColors].
   final TextStyle variationBase;
 
   /// Text color per variation depth 1…4, each a tone lighter (T-11) but
@@ -223,6 +224,11 @@ class TabiyaText extends ThemeExtension<TabiyaText> {
 
   /// The one number that matters (engine score): 18, SemiBold, tabular.
   final TextStyle value;
+
+  /// The headline figure of a screen ("12" answers today, "73%" learned):
+  /// 52 Bold, tight, tabular - the one size and weight beyond D-054's
+  /// scale, one per screen (D-092).
+  final TextStyle hero;
 
   static const maxIndentDepth = 4;
   static const indentPerLevel = 12.0;
@@ -268,6 +274,13 @@ class TabiyaText extends ThemeExtension<TabiyaText> {
       meta: t.bodySmall!.copyWith(color: cs.onSurfaceVariant),
       value: t.titleLarge!.copyWith(color: cs.onSurface, fontFeatures: _tabular),
       control: t.labelLarge!,
+      hero: _s(
+        AppFonts.sans,
+        52,
+        52,
+        FontWeight.w700,
+        letterSpacing: -1.5,
+      ).copyWith(color: cs.onSurface, fontFeatures: _tabular),
     );
   }
 

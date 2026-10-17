@@ -16,7 +16,7 @@ class MoreScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l.navMore)),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: AppSpacing.listBottom),
+        padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
         children: [
           // Three named groups instead of one long list (D-069).
           SectionHeader(l.moreYourGames),

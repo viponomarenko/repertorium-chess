@@ -452,17 +452,45 @@ class RepertoireGraph {
   }
 
   /// Makes [m] the main move (INV-1): the previous main becomes alternative.
+  /// When it replaces another main, the position's answer is new (D-090):
+  /// its card starts over and the engine's verdict on the old move goes.
   void _setMain(RepMove m) {
+    var replaced = false;
     for (final other in movesFrom(m.fromKey)) {
       if (other.role == MoveRole.main && other != m) {
         other.role = MoveRole.alternative;
         changes.upsertMoves.add(other.id);
+        replaced = true;
       }
     }
     m.role = MoveRole.main;
     changes.upsertMoves.add(m.id);
     _out[m.fromKey]!.sort(_moveOrder);
     _ensureCard(m.fromKey);
+    if (replaced) {
+      final card = cards[m.fromKey];
+      if (card != null) {
+        card.srs = const SrsState();
+        changes.upsertCards.add(m.fromKey);
+      }
+      _mainChanged(m.fromKey);
+    }
+  }
+
+  /// The main move of [key] is no longer the one the engine judged.
+  void _mainChanged(PositionKey key) {
+    final p = positions[key];
+    if (p == null || p.engineFlag.isEmpty) return;
+    p.engineFlag = '';
+    touchPosition(key);
+  }
+
+  /// Stores the engine's verdict on [key] (see `EngineFlag`).
+  void setEngineFlag(PositionKey key, String flag) {
+    final p = positions[key];
+    if (p == null || p.engineFlag == flag) return;
+    p.engineFlag = flag;
+    touchPosition(key);
   }
 
   /// Changes the role of an own move (F-REP-08).
@@ -471,6 +499,7 @@ class RepertoireGraph {
     if (role == MoveRole.main) {
       _setMain(m);
     } else if (role == MoveRole.alternative) {
+      if (m.role == MoveRole.main) _mainChanged(m.fromKey);
       m.role = MoveRole.alternative;
       changes.upsertMoves.add(m.id);
       // Keep INV-4: a position without main has no card.
@@ -603,6 +632,7 @@ class RepertoireGraph {
     for (final id in plan.moves) {
       final mv = moveById(id);
       if (mv == null) continue;
+      if (mv.role == MoveRole.main) _mainChanged(mv.fromKey);
       _unlink(mv);
       changes.deleteMoves.add(id);
       changes.upsertMoves.remove(id);
@@ -617,7 +647,15 @@ class RepertoireGraph {
     }
     if (plan.promotedAlternative != null) {
       final alt = moveById(plan.promotedAlternative!);
-      if (alt != null) _setMain(alt);
+      if (alt != null) {
+        _setMain(alt);
+        // The alternative is the answer now: learnt afresh (D-090).
+        final card = cards[alt.fromKey];
+        if (card != null) {
+          card.srs = const SrsState();
+          changes.upsertCards.add(alt.fromKey);
+        }
+      }
     }
   }
 

@@ -28,13 +28,10 @@ void main() {
       await settle(tester, frames: 6);
     }
     final notation = tester.getRect(find.byType(NotationView));
-    // The highlighted (current) move is painted with the current-move colour.
-    final current = find.byWidgetPredicate(
-      (w) =>
-          w is Container &&
-          w.decoration is BoxDecoration &&
-          (w.decoration! as BoxDecoration).color != null &&
-          (w.decoration! as BoxDecoration).borderRadius == BorderRadius.circular(6),
+    // The highlighted (current) move sits in its chip.
+    final current = find.descendant(
+      of: find.byType(NotationView),
+      matching: find.byWidgetPredicate((w) => w is MoveChipBox && w.current),
     );
     expect(current, findsOneWidget);
     final r = tester.getRect(current);

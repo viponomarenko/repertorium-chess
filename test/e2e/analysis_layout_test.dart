@@ -32,6 +32,34 @@ void main() {
     }
   }
 
+  // User screenshot (17.10): the engine unfolded with several long lines
+  // overflowed its room above the notation.
+  for (final size in const [Size(320, 640), Size(402, 874)]) {
+    for (final scale in const [1.0, 2.0]) {
+      testWidgets('unfolded engine lines fit at ${size.width.round()}px, text ${scale}x', (tester) async {
+        final app = await pumpApp(tester, size: size, textScale: scale);
+        await goTo(tester, '/analysis');
+        final board = tester.widget<BoardView>(find.byType(BoardView));
+        board.onMove!(board.position.parseSan('e4')!);
+        await settle(tester);
+        // A game with a variation, as on the screenshot: 1. e4 c5 (1... e5).
+        var b = tester.widget<BoardView>(find.byType(BoardView));
+        b.onMove!(b.position.parseSan('c5')!);
+        await settle(tester);
+        await tapText(tester, 'Назад');
+        b = tester.widget<BoardView>(find.byType(BoardView));
+        b.onMove!(b.position.parseSan('e5')!);
+        await settle(tester);
+        await tapText(tester, 'Рушій');
+        await tester.tap(find.byTooltip('Розгорнути'));
+        await settle(tester);
+        expectClean(tester);
+        expect(tester.getSize(find.byType(NotationView)).height, greaterThanOrEqualTo(40));
+        await app.close(tester);
+      });
+    }
+  }
+
   // User: "when I turn the engine on the board becomes small, and that's
   // it". The board keeps the size chosen with the grip; the grip still works.
   testWidgets('engine and explorer do not shrink the board', (tester) async {

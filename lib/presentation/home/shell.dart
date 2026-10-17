@@ -29,21 +29,30 @@ class AppShell extends StatelessWidget {
       (AppIcons.library, AppIcons.librarySelected, l.navLibrary),
       (AppIcons.more, AppIcons.more, l.navMore),
     ];
-    if (isWide(context) && MediaQuery.sizeOf(context).width >= 700) {
+    if (MediaQuery.sizeOf(context).width >= AppBreakpoints.wide) {
+      // A tablet: the same buttons in a column at the side, where both
+      // hands rest, and the whole height left to the page (D-084).
       return Scaffold(
         body: Row(
           children: [
-            NavigationRail(
-              selectedIndex: shell.currentIndex,
-              onDestinationSelected: _go,
-              labelType: NavigationRailLabelType.all,
-              destinations: [
-                for (final (icon, sel, label) in items)
-                  NavigationRailDestination(icon: Icon(icon), selectedIcon: Icon(sel), label: Text(label)),
+            _SideRail(
+              children: [
+                for (var i = 0; i < items.length; i++)
+                  BarButton(
+                    icon: items[i].$1,
+                    selectedIcon: items[i].$2,
+                    label: items[i].$3,
+                    selected: shell.currentIndex == i,
+                    onTap: () => _go(i),
+                  ),
               ],
             ),
             const VerticalDivider(width: AppSizes.hairline),
-            Expanded(child: shell),
+            Expanded(
+              child: PageScope.measured(
+                child: FadeOnChange(trigger: shell.currentIndex, child: shell),
+              ),
+            ),
           ],
         ),
       );
@@ -69,4 +78,36 @@ class AppShell extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The main navigation of a wide screen: the buttons of the bottom bar,
+/// one under another.
+class _SideRail extends StatelessWidget {
+  const _SideRail({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Theme.of(context).colorScheme.surfaceContainerLow,
+    child: SafeArea(
+      right: false,
+      child: SizedBox(
+        width: AppSizes.railWidth,
+        height: double.infinity,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final c in children)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: c,
+                ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }

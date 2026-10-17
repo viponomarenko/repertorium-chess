@@ -7,7 +7,6 @@ import '../../domain/chess/chess_utils.dart';
 import '../../domain/repertoire/repertoire_graph.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
-import '../widgets/notation_view.dart';
 import '../widgets/san_text.dart';
 import '../widgets/spoken.dart';
 import 'repertoire_controller.dart';
@@ -15,26 +14,39 @@ import 'repertoire_controller.dart';
 // Geometry of the tree (D-050): these numbers define how the outline
 // reads, so they are named here rather than snapped to the spacing scale.
 
-/// The fold arrow's column at the start of every row; a row is
-/// [kMoveChipMinHeight] high.
-const _foldWidth = 32.0;
+/// A row: one line of moves, 32 high (D-096: compact, but still a
+/// reasonable finger target; the mockup's 26 is too small to tap).
+const _rowHeight = 32.0;
 
-/// How far each branching level is indented.
-const _levelIndent = 16.0;
+/// The fold arrow's column at the start of every row, and its icon.
+const _foldWidth = 20.0;
+const _foldIcon = 12.0;
+
+/// The branch guides (├ └): where a level's vertical line stands, the
+/// column it takes, its tick and its thickness. A level is indented by the
+/// inset plus the column: the line stands under the fold arrow above.
+const _guideInset = 9.0;
+const _guideColumn = 12.0;
+const _guideTick = 10.0;
+const _guideWidth = 1.5;
+const _levelIndent = _guideInset + _guideColumn;
 
 /// Levels that are still indented; deeper ones stay at the last step.
 const _maxIndentLevels = 5;
 
-/// The guide line of a continuation: under the middle of the fold arrow of
-/// the row above.
-const _guideInset = 15.0;
-const _guideWidth = 1.5;
+/// The current row's background radius, the current move's pill padding,
+/// the marks' size, and how many moves before the current one a long line
+/// keeps when it is cut short to show the current move.
+const _currentRadius = 8.0;
+const _rowEnd = 6.0;
+const _pillSide = 6.0;
+const _pillLead = 4.0;
+const _pillTop = 1.0;
+const _markIcon = 14.0;
+const _leadMoves = 2;
 
-/// The narrowest move target (36 x 40, as in the notation, D-046).
-const _moveMinWidth = 40.0;
-
-/// Around a small mark after a move (share, problem, comment).
-const _markPadding = EdgeInsets.only(left: AppSpacing.xxs, right: AppSpacing.xs);
+/// The move number on the current move's black pill.
+const _currentNumberAlpha = 0.7;
 
 /// One row of the tree: the moves from a branching point up to the next one
 /// (or to the end of the line, or to a transposition).
@@ -46,6 +58,8 @@ class _Segment {
     required this.transposition,
     required this.forks,
     this.share,
+    this.last = true,
+    this.trail = const [],
   });
 
   final List<RepMove> moves;
@@ -65,6 +79,13 @@ class _Segment {
   /// The first move's share among the opponent's replies (%), shown only
   /// when the weights differ.
   final int? share;
+
+  /// The last of its siblings: its guide stops at the middle of the row (└).
+  final bool last;
+
+  /// For each ancestor level (from 1), whether its guide runs on past
+  /// this row (the ancestor has siblings below).
+  final List<bool> trail;
 }
 
 /// The repertoire as an outline of lines (F-REP-07, D-050): a line runs as
@@ -199,13 +220,14 @@ class _RepertoireTreeState extends ConsumerState<RepertoireTree> with AutomaticK
     List<RepMove> next(PositionKey k) =>
         filter == null ? g.movesFrom(k) : g.movesFrom(k).where((m) => filter.contains(m.toKey)).toList();
 
-    void walk(PositionKey key, String path, int depth) {
+    void walk(PositionKey key, String path, int depth, List<bool> trail) {
       final children = next(key);
       final opponent = children.where((m) => m.role == MoveRole.opponent).toList();
       final total = opponent.fold(0, (a, m) => a + m.weight);
       final weighted = opponent.length > 1 && total > 0 && opponent.map((m) => m.weight).toSet().length > 1;
-      for (final m in children) {
+      for (final (j, m) in children.indexed) {
         if (rows.length > 3000) return;
+        final last = j == children.length - 1;
         final moves = [m];
         var p = '$path/${m.uci}';
         var trans = _first[m.toKey] != p;
@@ -225,15 +247,17 @@ class _RepertoireTreeState extends ConsumerState<RepertoireTree> with AutomaticK
             transposition: trans,
             forks: cont.length,
             share: weighted && m.role == MoveRole.opponent ? (100 * m.weight / total).round() : null,
+            last: last,
+            trail: trail,
           ),
         );
         if (cont.isNotEmpty && (all || filter != null || _expanded.contains(p))) {
-          walk(moves.last.toKey, p, depth + 1);
+          walk(moves.last.toKey, p, depth + 1, depth == 0 ? const [] : [...trail, !last]);
         }
       }
     }
 
-    walk(g.rootKey, '', 0);
+    walk(g.rootKey, '', 0, const []);
     return rows;
   }
 
@@ -328,6 +352,10 @@ class _RepertoireTreeState extends ConsumerState<RepertoireTree> with AutomaticK
     }
   });
 
+  /// One row (D-096): fold arrow, the segment's moves in one line (cut
+  /// with "…"), the marks in a right column; the current row on a grey
+  /// band, the current move in a black pill. Continuations hang on branch
+  /// guides.
   Widget _row(BuildContext context, _Segment s, PositionKey? current) {
     final l = context.l10n;
     final cs = Theme.of(context).colorScheme;
@@ -337,122 +365,119 @@ class _RepertoireTreeState extends ConsumerState<RepertoireTree> with AutomaticK
     void toggle() => setState(() => open ? _expanded.remove(s.path) : _expanded.add(s.path));
     final small = context.tt.meta.tabular;
 
-    final items = <Widget>[];
+    var currentIndex = -1;
     for (var i = 0; i < s.moves.length; i++) {
       final m = s.moves[i];
-      final isCurrent = m.toKey == current && !(s.transposition && i == s.moves.length - 1);
-      items.add(_move(context, f, m, forceNumber: i == 0, isCurrent: isCurrent));
-      if (i == 0 && s.share != null) {
-        items.add(
-          Tooltip(
-            message: l.treeOpponentShare(s.share!),
-            child: Padding(
-              padding: _markPadding,
-              child: Text('${s.share}%', style: small),
-            ),
-          ),
-        );
-      }
-      if (widget.problemKeys.contains(m.toKey)) {
-        items.add(
-          Padding(
-            padding: _markPadding,
-            child: Icon(AppIcons.warning, size: AppSizes.iconSm, color: cs.error),
-          ),
-        );
-      }
-      if (m.comment.isNotEmpty) {
-        items.add(
-          Padding(
-            padding: _markPadding,
-            child: Icon(AppIcons.comment, size: AppSizes.iconSm, color: cs.onSurfaceVariant),
-          ),
-        );
-      }
+      if (m.toKey == current && !(s.transposition && i == s.moves.length - 1)) currentIndex = i;
     }
-    if (s.transposition) {
-      items.add(
+    // A long line cut short still shows the current move: it starts a few
+    // moves before it, after "…".
+    final from = currentIndex > _leadMoves + 1 ? currentIndex - _leadMoves : 0;
+    final spans = <InlineSpan>[
+      if (from > 0) TextSpan(text: '… ', style: context.tt.moveNumber),
+      for (var i = from; i < s.moves.length; i++) ...[
+        if (i > from) const TextSpan(text: ' '),
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: _move(context, f, s.moves[i], first: i == 0, forceNumber: i == from, isCurrent: i == currentIndex),
+        ),
+      ],
+    ];
+
+    final problem = s.moves.any((m) => widget.problemKeys.contains(m.toKey));
+    final comment = s.moves.any((m) => m.comment.isNotEmpty);
+    final marks = <Widget>[
+      if (s.share != null)
+        Tooltip(
+          message: l.treeOpponentShare(s.share!),
+          child: Text('${s.share}%', style: small),
+        ),
+      if (problem)
+        Tooltip(
+          message: l.frequentMistakes,
+          child: Icon(AppIcons.warning, size: _markIcon, color: cs.error),
+        ),
+      if (comment)
+        Tooltip(
+          message: l.moveComment,
+          child: Icon(AppIcons.comment, size: _markIcon, color: cs.onSurfaceVariant),
+        ),
+      if (s.transposition)
         Semantics(
           button: true,
-          child: InkWell(
-            onTap: () => _select(s.moves.last.toKey),
-            borderRadius: AppRadius.xsAll,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: kMoveChipMinHeight),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(AppIcons.transposition, size: AppSizes.iconSm, color: cs.onSurfaceVariant),
-                    AppGap.h4,
-                    Text(l.transposition, style: small),
-                  ],
-                ),
+          label: l.transposition,
+          excludeSemantics: true,
+          child: Tooltip(
+            message: l.transposition,
+            child: InkResponse(
+              onTap: () => _select(s.moves.last.toKey),
+              radius: AppSizes.tapTarget / 2,
+              child: SizedBox(
+                height: _rowHeight,
+                child: Icon(AppIcons.transposition, size: _markIcon, color: cs.onSurfaceVariant),
               ),
             ),
           ),
-        ),
-      );
-    } else if (canFold && !open) {
-      items.add(
-        ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: kMoveChipMinHeight),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            widthFactor: 1,
-            child: Padding(
-              padding: const EdgeInsets.only(left: AppSpacing.xxs),
-              child: Text('· ${l.linesN(_linesFrom(s.moves.last.toKey, s.path))}', style: small),
-            ),
-          ),
-        ),
-      );
-    }
+        )
+      else if (s.forks > 0)
+        Text(l.linesN(_linesFrom(s.moves.last.toKey, s.path)), style: small)
+      else
+        Text(l.lineEnds, style: small),
+    ];
 
+    final isCurrentRow = currentIndex >= 0;
     final row = GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: canFold ? toggle : null,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+      child: Container(
+        height: _rowHeight,
+        padding: const EdgeInsets.only(right: _rowEnd),
+        decoration: isCurrentRow
+            ? BoxDecoration(color: cs.surfaceContainerHigh, borderRadius: BorderRadius.circular(_currentRadius))
+            : null,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
               width: _foldWidth,
-              height: kMoveChipMinHeight,
+              height: _rowHeight,
               child: canFold
                   ? Semantics(
                       button: true,
                       expanded: open,
                       label: open ? l.collapse : l.expand,
                       excludeSemantics: true,
-                      child: Icon(
-                        open ? AppIcons.expand : AppIcons.chevronRight,
-                        size: AppSizes.iconSm,
-                        color: cs.onSurface,
-                      ),
+                      child: Icon(open ? AppIcons.expand : AppIcons.chevronRight, size: _foldIcon, color: cs.onSurface),
                     )
                   : null,
             ),
+            AppGap.h4,
             Expanded(
-              child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: items),
+              child: Text.rich(
+                TextSpan(children: spans),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+              ),
             ),
+            AppGap.h8,
+            for (final (i, m) in marks.indexed) ...[if (i > 0) AppGap.h4, m],
           ],
         ),
       ),
     );
     if (s.depth == 0) return row;
-    // Continuations: a thin guide line per level, as in the notation.
-    final level = (s.depth - 1).clamp(0, _maxIndentLevels);
-    return Padding(
-      padding: EdgeInsets.only(left: _levelIndent * level + _guideInset),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(color: cs.outlineVariant, width: _guideWidth),
-          ),
-        ),
+    // Continuations hang on branch guides: a line per open ancestor level
+    // and this row's own ├ or └.
+    final level = s.depth.clamp(1, _maxIndentLevels);
+    return CustomPaint(
+      painter: _GuidePainter(
+        level: level,
+        last: s.last,
+        trail: s.trail.take(level - 1).toList(),
+        color: cs.outlineVariant,
+      ),
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(start: _indentOf(level)),
         child: row,
       ),
     );
@@ -462,6 +487,7 @@ class _RepertoireTreeState extends ConsumerState<RepertoireTree> with AutomaticK
     BuildContext context,
     NotationFormatter f,
     RepMove m, {
+    required bool first,
     required bool forceNumber,
     required bool isCurrent,
   }) {
@@ -471,10 +497,26 @@ class _RepertoireTreeState extends ConsumerState<RepertoireTree> with AutomaticK
     final white = pos.turn == Side.white;
     final number = white ? '${pos.fullmoves}. ' : (forceNumber ? '${pos.fullmoves}... ' : '');
     final fg = isCurrent ? tt.currentMoveForeground : null;
-    // The notation's move style for every move (D-053); own side lines
-    // (not the main move) grey.
-    final moveStyle = tt.moveMain.copyWith(
-      color: fg ?? (m.role == MoveRole.alternative ? cs.onSurfaceVariant : cs.onSurface),
+    // The branching move in ink and SemiBold, the rest of the line in a
+    // quieter grey (D-096); the user's other choices stay grey.
+    final base = first ? tt.moveMain : tt.moveNumber;
+    final moveStyle = base.copyWith(
+      color: fg ?? (m.role == MoveRole.alternative ? cs.onSurfaceVariant : (first ? cs.onSurface : cs.secondary)),
+    );
+    final text = Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: number,
+            style: tt.moveNumber.copyWith(
+              color: isCurrent ? fg?.withValues(alpha: _currentNumberAlpha) : cs.onSurfaceVariant,
+            ),
+          ),
+          ...f.spans(m.san, moveStyle),
+        ],
+      ),
+      maxLines: 1,
+      softWrap: false,
     );
     return Semantics(
       button: true,
@@ -485,28 +527,83 @@ class _RepertoireTreeState extends ConsumerState<RepertoireTree> with AutomaticK
         key: isCurrent ? _currentKey : null,
         behavior: HitTestBehavior.opaque,
         onTap: () => _select(m.toKey),
-        child: Container(
-          // Same dense 36 x 40 move targets as the notation (D-046).
-          constraints: const BoxConstraints(minHeight: kMoveChipMinHeight, minWidth: _moveMinWidth),
-          padding: kMoveChipPadding,
-          decoration: moveChipDecoration(tt, current: isCurrent),
-          child: Align(
-            alignment: Alignment.centerLeft,
+        child: SizedBox(
+          height: _rowHeight,
+          child: Center(
             widthFactor: 1,
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: number,
-                    style: tt.moveNumber.copyWith(color: fg),
-                  ),
-                  ...f.spans(m.san, moveStyle),
-                ],
-              ),
-            ),
+            // The pill reaches past the move instead of pushing it: picking
+            // a move never shifts the line.
+            child: isCurrent
+                ? Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Positioned(
+                        // Into the space before the move, and past it over
+                        // its own end room, so the next move stays clear.
+                        left: -_pillLead,
+                        right: 0,
+                        top: -_pillTop,
+                        bottom: -_pillTop,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(color: tt.currentMoveBackground, borderRadius: AppRadius.xsAll),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: _pillSide),
+                        child: text,
+                      ),
+                    ],
+                  )
+                : text,
           ),
         ),
       ),
     );
+  }
+}
+
+/// Where a row at [level] (from 1) starts: its guide column and the
+/// levels above it.
+double _indentOf(int level) => _levelIndent * (level - 1) + _levelIndent;
+
+/// The branch guides of a continuation row (├ └, D-096): for each
+/// ancestor level whose branch goes on, a vertical line through the row;
+/// at the row's own level a line down to its middle (└, the last child) or
+/// through it (├), and a tick toward the row.
+class _GuidePainter extends CustomPainter {
+  const _GuidePainter({required this.level, required this.last, required this.trail, required this.color});
+  final int level;
+  final bool last;
+  final List<bool> trail;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = color
+      ..strokeWidth = _guideWidth;
+    double xOf(int l) => _guideInset + _levelIndent * (l - 1) + _guideWidth / 2;
+    for (var k = 1; k < level; k++) {
+      if (k - 1 < trail.length && trail[k - 1]) {
+        canvas.drawLine(Offset(xOf(k), 0), Offset(xOf(k), size.height), line);
+      }
+    }
+    final x = xOf(level);
+    final mid = size.height / 2;
+    canvas.drawLine(Offset(x, 0), Offset(x, last ? mid : size.height), line);
+    canvas.drawLine(Offset(x, mid), Offset(x + _guideTick, mid), line);
+  }
+
+  @override
+  bool shouldRepaint(_GuidePainter old) =>
+      old.level != level || old.last != last || old.color != color || !_sameTrail(old.trail, trail);
+
+  static bool _sameTrail(List<bool> a, List<bool> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }

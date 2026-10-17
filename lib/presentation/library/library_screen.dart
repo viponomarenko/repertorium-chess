@@ -57,7 +57,7 @@ class LibraryScreen extends ConsumerWidget {
                 ],
               )
             : ListView(
-                padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.listBottom),
+                padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.listBottom).inPage(context),
                 children: [
                   SettingsGroup(children: [for (final c in list) _CollectionTile(c)]),
                 ],

@@ -4,14 +4,43 @@ import '../../domain/chess/chess_utils.dart';
 import '../../domain/repertoire/repertoire_graph.dart';
 import 'engine_service.dart';
 
+/// The engine's verdict on the main move of a position (F-ENG-04): the
+/// move it would play instead, how much the main move loses, and whether
+/// the user decided to keep their own move (D-090).
 class EngineFlag {
-  const EngineFlag({required this.lossCp, required this.bestUci, required this.bestSan, required this.depth});
+  const EngineFlag({
+    required this.lossCp,
+    required this.bestUci,
+    required this.bestSan,
+    required this.depth,
+    this.mainUci = '',
+    this.dismissed = false,
+  });
   final int lossCp;
   final String bestUci;
   final String bestSan;
   final int depth;
 
-  String encode() => jsonEncode({'loss': lossCp, 'best': bestUci, 'bestSan': bestSan, 'depth': depth});
+  /// The main move the verdict is about (empty in flags saved before D-090).
+  final String mainUci;
+
+  /// The user kept their move: no longer a problem, and a new check does
+  /// not raise it again while the main move and the engine's choice stay.
+  final bool dismissed;
+
+  bool get active => !dismissed;
+
+  EngineFlag dismiss() =>
+      EngineFlag(lossCp: lossCp, bestUci: bestUci, bestSan: bestSan, depth: depth, mainUci: mainUci, dismissed: true);
+
+  String encode() => jsonEncode({
+    'loss': lossCp,
+    'best': bestUci,
+    'bestSan': bestSan,
+    'depth': depth,
+    if (mainUci.isNotEmpty) 'main': mainUci,
+    if (dismissed) 'dismissed': true,
+  });
 
   static EngineFlag? decode(String s) {
     if (s.isEmpty) return null;
@@ -22,11 +51,16 @@ class EngineFlag {
         bestUci: j['best'] as String? ?? '',
         bestSan: j['bestSan'] as String? ?? '',
         depth: (j['depth'] as num?)?.toInt() ?? 0,
+        mainUci: j['main'] as String? ?? '',
+        dismissed: j['dismissed'] as bool? ?? false,
       );
     } catch (_) {
       return null;
     }
   }
+
+  /// An engine flag the user still has to decide about.
+  static bool isActive(String s) => decode(s)?.active ?? false;
 }
 
 class EngineCheckProgress {
@@ -72,8 +106,20 @@ Stream<EngineCheckProgress> checkRepertoire(
           final loss = (best.score - afterScore) * sign;
           if (loss > thresholdCp) {
             final san = bestMove == null ? bestUci : position.makeSan(bestMove).$2;
-            flag = EngineFlag(lossCp: loss, bestUci: bestUci, bestSan: san, depth: before.depth).encode();
-            flagged++;
+            final previous = EngineFlag.decode(pos.engineFlag);
+            if (previous != null && previous.dismissed && previous.mainUci == main.uci && previous.bestUci == bestUci) {
+              // Already answered "keep my move": stays answered.
+              flag = pos.engineFlag;
+            } else {
+              flag = EngineFlag(
+                lossCp: loss,
+                bestUci: bestUci,
+                bestSan: san,
+                depth: before.depth,
+                mainUci: main.uci,
+              ).encode();
+              flagged++;
+            }
           }
         }
       }

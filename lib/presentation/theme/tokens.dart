@@ -64,8 +64,13 @@ abstract final class AppInsets {
     AppSpacing.sm,
   );
 
-  /// Around a move in the notation: moves stand close, like text (D-042).
-  static const moveChip = EdgeInsets.symmetric(horizontal: 5, vertical: 2);
+  /// Around a move in the notation: moves stand close, like text (D-042,
+  /// D-086); the current move's chip reaches [moveChipOutset] beyond it.
+  static const moveChip = EdgeInsets.symmetric(horizontal: 4, vertical: 2);
+
+  /// How far the current move's chip reaches past the move on each side,
+  /// over the neighbours' padding, so the line stays dense.
+  static const double moveChipOutset = 1;
 
   /// Inside a chip, around its label.
   static const chip = EdgeInsets.all(6);
@@ -89,6 +94,7 @@ abstract final class AppGap {
   static const h8 = SizedBox(width: AppSpacing.sm);
   static const h12 = SizedBox(width: AppSpacing.md);
   static const h16 = SizedBox(width: AppSpacing.lg);
+  static const h24 = SizedBox(width: AppSpacing.xl);
 }
 
 /// Corner radii: five steps and the pill.
@@ -177,6 +183,40 @@ abstract final class AppSizes {
 
   /// Widest readable column on tablets.
   static const double maxContentWidth = 720;
+
+  /// Widest message with its buttons (an empty state, a summary).
+  static const double maxMessageWidth = 480;
+
+  /// A sheet shown as a card in the middle of a wide screen.
+  static const double sheetCardWidth = 560;
+
+  /// The narrowest column of text under a board that does not fill the
+  /// width of a tablet.
+  static const double minPanelWidth = 560;
+
+  /// The main navigation at the side of a wide screen.
+  static const double railWidth = 88;
+
+  /// Two columns of a dashboard: the narrow one and both with the gap.
+  static const double dashboardSide = 420;
+  static const double dashboardWidth = 1040;
+}
+
+/// Widths at which the layout changes (D-084).
+abstract final class AppBreakpoints {
+  /// A tablet, or a phone on its side: the navigation moves to the side,
+  /// sheets become cards, pages keep a readable column.
+  static const double wide = 700;
+
+  /// A wide screen in landscape (a phone on its side).
+  static const double wideLandscape = 560;
+
+  /// Room for two columns of cards.
+  static const double twoColumns = 840;
+
+  /// The least a tablet keeps under the board for its text, as a share of
+  /// the height.
+  static const double textShareBelowBoard = 0.3;
 }
 
 /// Opacities for states.

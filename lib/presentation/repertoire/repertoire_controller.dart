@@ -2,6 +2,7 @@ import 'package:dartchess/dartchess.dart' hide PgnComment;
 import 'package:flutter/foundation.dart';
 
 import '../../data/db/database.dart';
+import '../../data/engine/engine_check.dart';
 import '../../data/repositories/repertoire_repository.dart';
 import '../../domain/chess/chess_utils.dart';
 import '../../domain/repertoire/repertoire_graph.dart';
@@ -260,4 +261,60 @@ class RepertoireController extends ChangeNotifier {
     graph!.setDeferred(k, deferred);
     await save();
   }
+
+  /// Takes the engine's suggestion at [key] (D-090): its move becomes the
+  /// main move (added if it is not in the repertoire yet), the old main
+  /// stays as an alternative with all its lines, the card starts over and
+  /// the flag goes. Returns what is needed to undo it ([restore]), or null
+  /// when there is nothing to apply.
+  Future<EngineApplied?> applyEngineSuggestion(PositionKey key) async {
+    final g = graph!;
+    final flag = EngineFlag.decode(g.positions[key]?.engineFlag ?? '');
+    final old = g.mainMove(key);
+    if (flag == null || old == null || !g.isUserTurn(key)) return null;
+    final pos = positionFromFen(g.positions[key]!.fen);
+    final move = parseUciMove(pos, flag.bestUci);
+    if (move == null) return null;
+    final before = g.clone();
+    final oldPath = [...path];
+    final existing = g.move(key, standardUci(pos, move));
+    if (existing != null) {
+      g.setRole(existing, MoveRole.main);
+    } else {
+      g.addMove(pos, move, policy: OwnMovePolicy.replaceMain, source: 'engine');
+    }
+    g.setEngineFlag(key, '');
+    await save();
+    return EngineApplied(before: before, path: oldPath, best: flag.bestSan, old: old.san);
+  }
+
+  /// Keeps the user's own move at [key]: the flag is marked answered, so
+  /// it leaves the problems and a new check does not raise it again.
+  /// Returns the flag as it was, for undo ([setEngineFlag]).
+  Future<String?> dismissEngineFlag(PositionKey key) async {
+    final raw = graph!.positions[key]?.engineFlag ?? '';
+    final flag = EngineFlag.decode(raw);
+    if (flag == null) return null;
+    graph!.setEngineFlag(key, flag.dismiss().encode());
+    await save();
+    return raw;
+  }
+
+  Future<void> setEngineFlag(PositionKey key, String flag) async {
+    graph!.setEngineFlag(key, flag);
+    await save();
+  }
+}
+
+/// What [RepertoireController.applyEngineSuggestion] changed.
+class EngineApplied {
+  const EngineApplied({required this.before, required this.path, required this.best, required this.old});
+
+  /// The repertoire and the path before, for undo.
+  final RepertoireGraph before;
+  final List<RepMove> path;
+
+  /// The new main move and the one that became an alternative.
+  final String best;
+  final String old;
 }

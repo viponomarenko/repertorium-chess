@@ -107,7 +107,7 @@ class _HeadersEditorState extends State<_HeadersEditor> {
         ],
       ),
       body: ListView(
-        padding: AppInsets.page,
+        padding: AppInsets.page.inPage(context),
         children: [
           for (var i = 0; i < _rows.length; i++)
             Padding(

@@ -18,8 +18,9 @@ import '../app/route_observer.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
 import 'engine_model_sheet.dart';
-import 'notation_view.dart';
+import 'san_text.dart';
 import 'ui/motion.dart';
+import 'ui/sheets.dart';
 
 /// Evaluation in the user's locale: +0,32 / −1,50 / #3 (T-18).
 String formatScore(BuildContext context, PvLine l) => context.fmtEval(cp: l.cp, mate: l.mate);
@@ -111,6 +112,7 @@ class EnginePanel extends ConsumerStatefulWidget {
     required this.fen,
     this.onAddLine,
     this.onBestMove,
+    this.onSecondMove,
     this.compact = false,
     this.maxHeight,
   });
@@ -119,6 +121,10 @@ class EnginePanel extends ConsumerStatefulWidget {
 
   /// Reports the best move (for a board arrow).
   final void Function(String? uci)? onBestMove;
+
+  /// Reports the first move of the second line while two or more are shown
+  /// (for a fainter arrow, D-097).
+  final void Function(String? uci)? onSecondMove;
   final bool compact;
 
   /// Keeps the source and evaluation visible while longer variations scroll.
@@ -152,6 +158,20 @@ EngineOptions analysisOptions(AppSettings s, {required int multiPv, bool deeper 
 }
 
 class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingObserver, RouteAware {
+  /// The header's sizes (D-097): the source icon and chevron, the gap
+  /// after the icon, the spinner, the fold button, the room around a line.
+  static const double _sourceIcon = 18;
+  static const double _chevron = 12;
+  static const double _iconGap = 6;
+  static const double _spinner = 10;
+  static const double _fold = 36;
+  static const double _lineGap = 3;
+  static const double _linesMax = 132;
+
+  /// The least room the status keeps beside the name.
+  static const double _statusMin = 72;
+
+  String? _second;
   final Map<String, EngineEval> _completed = {};
   Completer<void>? _cloudAbort;
 
@@ -381,11 +401,8 @@ class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingOb
   Future<void> _sourceSheet() async {
     final l = context.l10n;
     final onCloud = _usingCloud;
-    final choice = await showModalBottomSheet<bool>(
-      context: context,
-      useRootNavigator: true,
-      showDragHandle: true,
-      isScrollControlled: true,
+    final choice = await showAppModal<bool>(
+      context,
       builder: (ctx) {
         final t = Theme.of(ctx);
         Widget option({
@@ -548,12 +565,22 @@ class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingOb
         ? TextButton(onPressed: _goDeeper, child: Text(l.engineDeeper))
         : null;
     final shown = (widget.compact && !_expanded ? lines.take(1) : lines.take(5)).toList();
+    // The second line's first move gets a fainter arrow on the board.
+    final second = shown.length > 1 && shown[1].moves.isNotEmpty ? shown[1].moves.first : null;
+    if (second != _second) {
+      _second = second;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onSecondMove?.call(_second);
+      });
+    }
 
+    // Status: depth, source state; a spinner while it thinks.
     Widget statusLabel() => Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (busy) ...[
-          const SizedBox.square(dimension: 10, child: CircularProgressIndicator(strokeWidth: 1.5)),
-          AppGap.h8,
+          const SizedBox.square(dimension: _spinner, child: CircularProgressIndicator(strokeWidth: 1.5)),
+          AppGap.h4,
         ],
         Flexible(
           child: Tooltip(
@@ -562,7 +589,7 @@ class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingOb
             child: Text(
               status,
               key: const ValueKey('engine-status'),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: context.tt.meta.tabular,
             ),
@@ -571,6 +598,8 @@ class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingOb
       ],
     );
 
+    // One button: the source's icon and name, a chevron, and (D-097) the
+    // status on the same line when there is room.
     Widget source({required bool withStatus}) => Semantics(
       button: true,
       hint: l.engineSourceHint,
@@ -580,178 +609,343 @@ class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingOb
         borderRadius: AppRadius.smAll,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: AppSizes.controlSm),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Icon(
-                    _usingCloud ? AppIcons.cloud : AppIcons.engine,
-                    size: AppSizes.iconMd,
-                    color: cs.onSurfaceVariant,
-                  ),
-                  AppGap.h8,
-                  Flexible(
-                    // The name opens the source sheet: words on a control (D-053).
-                    child: Text(sourceName, key: const ValueKey('engine-source-name'), style: context.tt.control),
-                  ),
-                  AppGap.h4,
-                  Icon(AppIcons.chevronRight, size: AppSizes.iconSm, color: cs.onSurfaceVariant),
-                ],
-              ),
-              if (withStatus) statusLabel(),
+              Icon(_usingCloud ? AppIcons.cloud : AppIcons.engine, size: _sourceIcon, color: cs.onSurfaceVariant),
+              const SizedBox(width: _iconGap),
+              // The name opens the source sheet: words on a control (D-053).
+              // It is never cut: on one line beside the status when there is
+              // room, otherwise the status moves under it.
+              if (withStatus)
+                Text(sourceName, key: const ValueKey('engine-source-name'), style: context.tt.control)
+              else
+                Flexible(
+                  child: Text(sourceName, key: const ValueKey('engine-source-name'), style: context.tt.control),
+                ),
+              Icon(AppIcons.chevronRight, size: _chevron, color: cs.onSurfaceVariant),
+              if (withStatus) ...[AppGap.h4, Flexible(child: statusLabel())],
             ],
           ),
         ),
       ),
     );
 
-    // With lines on screen the status moves to the caption line; without
-    // them (starting, an error) it stays under the source name.
-    final inlineStatus = shown.isNotEmpty || action != null;
-    final variations = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_error is EngineNetworkUnavailable || _error is EnginePositionUnsupported)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.md),
-            child: Text(
-              _error is EngineNetworkUnavailable ? l.engineNetworkRequired : l.enginePositionUnsupported,
-              style: context.tt.body,
+    // The evaluation pill, with White's share as a thin bar along its
+    // bottom (the bar that used to run under the header).
+    final score = _ScorePill(line: lines.isEmpty ? null : lines.first);
+
+    // The fold button: a chevron that turns over (D-097).
+    final expand = widget.compact
+        ? IconButton(
+            tooltip: _expanded ? l.collapse : l.expand,
+            onPressed: _toggleExpanded,
+            constraints: const BoxConstraints(minWidth: _fold, minHeight: _fold),
+            padding: EdgeInsets.zero,
+            icon: AnimatedRotation(
+              turns: _expanded ? 0.5 : 0,
+              duration: AppMotion.of(context).base,
+              curve: AppMotion.standard,
+              child: const Icon(AppIcons.expand, size: AppSizes.iconMd),
             ),
+          )
+        : null;
+
+    final rows = <Widget>[
+      if (_error is EngineNetworkUnavailable || _error is EnginePositionUnsupported)
+        Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
+          child: Text(
+            _error is EngineNetworkUnavailable ? l.engineNetworkRequired : l.enginePositionUnsupported,
+            style: context.tt.body,
           ),
-        if (shown.isNotEmpty || action != null)
-          // One short line: the caption, and at its end the status
-          // (depth, source state) instead of a row of its own (D-079).
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.xs),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    (shown.length > 1 ? l.engineVariations : l.engineBest).toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.tt.overline,
-                  ),
-                ),
-                // Still opens the source sheet, as it did under the name.
-                if (inlineStatus) ...[
-                  AppGap.h8,
-                  Flexible(
-                    child: InkWell(onTap: _sourceSheet, child: statusLabel()),
-                  ),
-                ],
-                if (action != null)
-                  Flexible(
-                    child: Align(alignment: Alignment.centerRight, child: action),
-                  ),
-              ],
-            ),
-          ),
-        for (var i = 0; i < shown.length; i++) ...[
-          if (i > 0) const Divider(height: AppSizes.hairline),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+      for (var i = 0; i < shown.length; i++) ...[
+        if (i > 0) Divider(height: AppSizes.hairline, thickness: AppSizes.hairline, color: cs.surfaceContainerHigh),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: _lineGap),
+          child: Row(
             children: [
-              if (shown.length > 1)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.xs, right: AppSpacing.md),
-                  child: SizedBox(
-                    width: MediaQuery.textScalerOf(context).scale(48),
-                    child: Text(formatScore(context, shown[i]), style: context.tt.title.tabular),
-                  ),
-                ),
+              if (shown.length > 1) ...[_LineScore(line: shown[i]), AppGap.h8],
               Expanded(
-                child: Padding(
-                  // Centred on the 36-high row when it is one line of text.
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  child: MoveLineText(
-                    uciLineToSan(widget.fen, shown[i].moves).join(' '),
-                    maxLines: widget.compact && !_expanded ? 2 : 3,
-                  ),
+                child: Text.rich(
+                  TextSpan(children: _lineSpans(context, uciLineToSan(widget.fen, shown[i].moves))),
+                  maxLines: widget.compact && !_expanded ? 1 : 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (widget.onAddLine != null)
-                IconButton(
+              if (widget.onAddLine != null) ...[
+                AppGap.h4,
+                _AddLineButton(
                   tooltip: l.addLineAsVariation,
-                  // As tall as a row of moves (36), still 48 wide: a line of
-                  // one row of text must not be padded out to 48 (D-080).
-                  constraints: const BoxConstraints(minWidth: AppSizes.tapTarget, minHeight: AppSizes.moveRow),
-                  padding: EdgeInsets.zero,
-                  style: const ButtonStyle(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                   onPressed: () => widget.onAddLine!(shown[i].moves.take(10).toList()),
-                  icon: const Icon(AppIcons.add, size: AppSizes.iconMd),
                 ),
+              ],
             ],
           ),
-        ],
+        ),
       ],
+    ];
+    // The caption is no longer shown: screen readers still hear it.
+    final variations = Semantics(
+      label: shown.isEmpty ? null : (shown.length > 1 ? l.engineVariations : l.engineBest),
+      container: true,
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: rows),
     );
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: widget.maxHeight ?? double.infinity),
       child: Padding(
-        padding: const EdgeInsets.only(left: AppSpacing.page, right: AppSpacing.md),
+        padding: const EdgeInsets.only(left: AppSpacing.page, right: AppSpacing.xs),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             LayoutBuilder(
               builder: (context, constraints) {
-                final stacked = constraints.maxWidth < 330 || MediaQuery.textScalerOf(context).scale(14) > 19;
-                final score = Container(
-                  key: const ValueKey('engine-score'),
-                  constraints: const BoxConstraints(minWidth: 64),
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-                  decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: AppRadius.mdAll),
-                  child: Text(
-                    lines.isEmpty ? '…' : formatScore(context, lines.first),
-                    textAlign: TextAlign.center,
-                    style: context.tt.value,
+                // The status goes under the name when the name, a little of
+                // the status and the controls do not fit in one row (narrow
+                // screens, large text).
+                final name = TextPainter(
+                  text: TextSpan(text: sourceName, style: context.tt.control),
+                  textDirection: Directionality.of(context),
+                  textScaler: MediaQuery.textScalerOf(context),
+                  maxLines: 1,
+                )..layout();
+                // The score pill as drawn (the score's width, at least its
+                // minimum) and the room an action may take.
+                final scoreText = TextPainter(
+                  text: TextSpan(
+                    text: lines.isEmpty ? '…' : formatScore(context, lines.first),
+                    style: context.tt.title.tabular,
                   ),
-                );
-                final expand = widget.compact
-                    ? IconButton(
-                        tooltip: _expanded ? l.collapse : l.expand,
-                        onPressed: _toggleExpanded,
-                        icon: Icon(_expanded ? AppIcons.collapse : AppIcons.expand, size: AppSizes.iconMd),
-                      )
-                    : null;
+                  textDirection: Directionality.of(context),
+                  textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
+                  maxLines: 1,
+                )..layout();
+                final scoreWidth = math.max(_ScorePill._minWidth, scoreText.width + 2 * AppSpacing.sm);
+                final needed =
+                    _sourceIcon +
+                    _iconGap +
+                    name.width +
+                    _chevron +
+                    AppSpacing.xs +
+                    _statusMin +
+                    AppSpacing.sm +
+                    scoreWidth +
+                    AppSizes.tapTarget +
+                    (action == null ? 0 : constraints.maxWidth / 3);
+                name.dispose();
+                scoreText.dispose();
+                final stacked = constraints.maxWidth < needed || MediaQuery.textScalerOf(context).scale(14) > 19;
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
-                        Expanded(child: source(withStatus: !stacked && !inlineStatus)),
-                        if (!stacked) ...[AppGap.h12, score],
+                        Expanded(child: source(withStatus: !stacked)),
+                        // At most a third of the row: the score and the fold
+                        // button stay where they are when it appears.
+                        if (!stacked && action != null)
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: constraints.maxWidth / 3),
+                            child: action,
+                          ),
+                        AppGap.h8,
+                        score,
                         ?expand,
+                        if (expand == null) AppGap.h8,
                       ],
                     ),
-                    if (stacked) ...[
-                      AppGap.v4,
+                    if (stacked)
                       Row(
                         children: [
                           Expanded(
-                            child: inlineStatus
-                                ? const SizedBox.shrink()
-                                : InkWell(onTap: _sourceSheet, child: statusLabel()),
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: InkWell(onTap: _sourceSheet, child: statusLabel()),
+                            ),
                           ),
-                          AppGap.h12,
-                          score,
+                          if (action != null) Flexible(child: action),
                         ],
                       ),
-                    ],
                   ],
                 );
               },
             ),
-            EvalBar(line: lines.isEmpty ? null : lines.first, thickness: AppSizes.gripHeight),
-            if (widget.maxHeight != null) Flexible(child: SingleChildScrollView(child: variations)) else variations,
+            // Unfolded, the lines take at most [_linesMax] and scroll inside,
+            // so the notation under the panel stays in sight (D-097).
+            if (widget.compact && _expanded || widget.maxHeight != null)
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: widget.compact && _expanded ? _linesMax : double.infinity),
+                  child: SingleChildScrollView(child: variations),
+                ),
+              )
+            else
+              variations,
           ],
+        ),
+      ),
+    );
+  }
+
+  /// A line of moves (D-097): the move to play now in ink and SemiBold, the
+  /// rest Regular in a quieter grey, the numbers grey.
+  List<InlineSpan> _lineSpans(BuildContext context, List<String> words) {
+    final tt = context.tt;
+    final cs = Theme.of(context).colorScheme;
+    final f = ref.watch(notationFormatterProvider);
+    final out = <InlineSpan>[];
+    var first = true;
+    for (final (i, w) in words.indexed) {
+      if (i > 0) out.add(TextSpan(text: ' ', style: tt.moveNumber));
+      final m = RegExp(r'^(\d+\.+\s?)(.*)$').firstMatch(w);
+      final number = m?.group(1) ?? '';
+      final san = m?.group(2) ?? w;
+      if (number.isNotEmpty) {
+        out.add(
+          TextSpan(
+            text: '${number.trim()} ',
+            style: tt.moveNumber.copyWith(color: cs.onSurfaceVariant),
+          ),
+        );
+      }
+      out.addAll(
+        f.spans(san, first ? tt.moveMain.copyWith(color: cs.onSurface) : tt.moveNumber.copyWith(color: cs.secondary)),
+      );
+      first = false;
+    }
+    return out;
+  }
+}
+
+/// The evaluation of the best line (D-097): a pill with the score and,
+/// along its bottom, White's share as a thin bar.
+class _ScorePill extends StatelessWidget {
+  const _ScorePill({required this.line});
+  final PvLine? line;
+
+  static const double _minWidth = 60;
+  static const double _height = 26;
+  static const double _bar = 3;
+  static const double _radius = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      key: const ValueKey('engine-score'),
+      constraints: const BoxConstraints(minWidth: _minWidth, minHeight: _height),
+      decoration: BoxDecoration(color: cs.surfaceContainerHigh, borderRadius: BorderRadius.circular(_radius)),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.sm, 0, AppSpacing.sm, _bar),
+            child: Center(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: MediaQuery.withClampedTextScaling(
+                maxScaleFactor: 1.3,
+                child: Text(
+                  line == null ? '…' : formatScore(context, line!),
+                  textAlign: TextAlign.center,
+                  style: context.tt.title.tabular,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: _bar,
+            child: EvalBar(line: line, thickness: _bar),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A line's own evaluation when several are shown (D-097): a small pill in
+/// the colour of the side that is better, grey when it is level.
+class _LineScore extends StatelessWidget {
+  const _LineScore({required this.line});
+  final PvLine line;
+
+  static const double _minWidth = 44;
+  static const double _height = 20;
+  static const double _radius = 5;
+
+  /// Below this (in centipawns) the line counts as level.
+  static const int _levelCp = 10;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final v = line.mate != null ? (line.mate! > 0 ? 1 : -1) : (line.cp ?? 0);
+    final (bg, fg) = v.abs() < _levelCp && line.mate == null
+        ? (cs.surfaceContainerHigh, cs.onSurface)
+        : v > 0
+        ? (cs.sideWhite, cs.onSideWhite)
+        : (cs.sideBlack, cs.onSideBlack);
+    return Container(
+      constraints: const BoxConstraints(minWidth: _minWidth, minHeight: _height),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(_radius),
+        border: Border.all(color: cs.outlineVariant, width: AppSizes.hairline),
+      ),
+      child: Center(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.2,
+          child: Text(
+            formatScore(context, line),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: fg).tabular,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Add as a variation": a small visible pill, a 48 × 36 target.
+class _AddLineButton extends StatelessWidget {
+  const _AddLineButton({required this.tooltip, required this.onPressed});
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  static const double _width = 28;
+  static const double _height = 20;
+  static const double _icon = 14;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: tooltip,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: tooltip,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onPressed,
+          child: SizedBox(
+            width: AppSizes.tapTarget,
+            height: AppSizes.moveRow,
+            child: Center(
+              child: Container(
+                width: _width,
+                height: _height,
+                decoration: BoxDecoration(color: cs.surface, borderRadius: AppRadius.full),
+                child: Icon(AppIcons.add, size: _icon, color: cs.onSurface),
+              ),
+            ),
+          ),
         ),
       ),
     );

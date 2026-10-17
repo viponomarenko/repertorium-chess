@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
+import 'basics.dart';
 
 /// Title of a bottom sheet, under its handle.
 class SheetHeader extends StatelessWidget {
@@ -24,9 +25,43 @@ class SheetHeader extends StatelessWidget {
   }
 }
 
-/// The app's bottom sheet: over the navigation bar, with a handle, as tall
-/// as its content needs (scrolling when that is more than the screen),
-/// clear of the keyboard and the home indicator.
+/// Shows [builder] over the screen: a sheet from the bottom on a phone,
+/// a card in the middle of a wide screen, where a strip along the bottom
+/// edge is far from both the eyes and the hands (D-084). Closes by a tap
+/// outside, a swipe down (the sheet) or Escape (a keyboard).
+Future<T?> showAppModal<T>(BuildContext context, {required WidgetBuilder builder}) {
+  if (!isWide(context)) {
+    return showModalBottomSheet<T>(
+      context: context,
+      useRootNavigator: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: builder,
+    );
+  }
+  return showDialog<T>(
+    context: context,
+    useRootNavigator: true,
+    builder: (ctx) => Dialog(
+      clipBehavior: Clip.antiAlias,
+      insetPadding: const EdgeInsets.all(AppSpacing.xl),
+      constraints: const BoxConstraints(maxWidth: AppSizes.sheetCardWidth),
+      child: PageScope(
+        width: 0,
+        // The room the handle takes on a sheet.
+        child: Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
+          child: MediaQuery.removePadding(context: ctx, removeTop: true, removeBottom: true, child: builder(ctx)),
+        ),
+      ),
+    ),
+  );
+}
+
+/// The app's sheet: over the navigation bar, with a title, as tall as its
+/// content needs (scrolling when that is more than the screen), clear of
+/// the keyboard and the home indicator.
 Future<T?> showAppSheet<T>(
   BuildContext context, {
   String? title,
@@ -37,12 +72,8 @@ Future<T?> showAppSheet<T>(
   /// the remaining height instead of being wrapped into a scroll view.
   bool scrollable = true,
 }) {
-  return showModalBottomSheet<T>(
-    context: context,
-    useRootNavigator: true,
-    showDragHandle: true,
-    isScrollControlled: true,
-    useSafeArea: true,
+  return showAppModal<T>(
+    context,
     builder: (ctx) {
       final body = builder(ctx);
       return Padding(

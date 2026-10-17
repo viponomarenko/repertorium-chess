@@ -10,6 +10,7 @@ import '../../data/incoming/incoming_files.dart';
 import '../../data/notifications/reminder_service.dart';
 import '../accounts/accounts_providers.dart';
 import '../theme/app_theme.dart';
+import '../widgets/ui/notice.dart';
 import 'providers.dart';
 import 'router.dart';
 
@@ -35,12 +36,9 @@ class _TabiyaAppState extends ConsumerState<TabiyaApp> with WidgetsBindingObserv
     });
     // Lichess answered 429: tell the user that requests are paused (ТЗ 6.1).
     _rateLimit = ref.read(lichessClientProvider).rateLimitEvents.listen((_) {
-      final messenger = scaffoldMessengerKey.currentState;
-      if (messenger == null || !messenger.mounted) return;
-      final text = AppLocalizations.of(messenger.context).lichessRateLimited;
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(text)));
+      final ctx = scaffoldMessengerKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      showNotice(AppLocalizations.of(ctx).lichessRateLimited);
     });
   }
 
@@ -117,6 +115,8 @@ class _TabiyaAppState extends ConsumerState<TabiyaApp> with WidgetsBindingObserv
         return const Locale('en');
       },
       routerConfig: router,
+      // Notices come in at the top, over every screen (D-087).
+      builder: (context, child) => NoticeHost(child: child ?? const SizedBox.shrink()),
     );
   }
 }

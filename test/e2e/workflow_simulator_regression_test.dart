@@ -58,7 +58,7 @@ void main() {
           await repo.saveGraph(id, graph);
         },
       );
-      await tapText(tester, 'Тренуватись');
+      await tapText(tester, 'ТРЕНУВАТИСЬ');
       final explanation = find.byWidgetPredicate((w) => w is MovesText && w.text == comment);
       expect(explanation, findsOneWidget);
       final widget = tester.widget<MovesText>(explanation);

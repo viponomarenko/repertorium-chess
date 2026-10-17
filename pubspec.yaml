@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.1+7
+version: 1.0.2+1
 
 environment:
   sdk: ^3.13.4
@@ -109,7 +109,7 @@ flutter:
     - assets/openings/
     - assets/sounds/
     - assets/starter/
-    - assets/fonts/google_sans/OFL.txt
+    - assets/fonts/exo2/OFL.txt
     - assets/fonts/google_sans_code/OFL.txt
     - assets/fonts/noto_sans_math/OFL.txt
 
@@ -117,9 +117,9 @@ flutter:
   fonts:
     # Original variable files from google/fonts, unmodified; Flutter maps
     # fontWeight onto the wght axis (400-700).
-    - family: GoogleSans
+    - family: Exo2
       fonts:
-        - asset: assets/fonts/google_sans/GoogleSans[GRAD,opsz,wght].ttf
+        - asset: assets/fonts/exo2/Exo2[wght].ttf
     - family: GoogleSansCode
       fonts:
         - asset: assets/fonts/google_sans_code/GoogleSansCode[wght].ttf

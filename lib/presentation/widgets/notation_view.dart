@@ -9,6 +9,7 @@ import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
 import 'san_text.dart';
 import 'spoken.dart';
+import 'ui/motion.dart';
 
 /// NAG code -> symbol (F-VIEW-02).
 String nagSymbol(int nag) => switch (nag) {
@@ -52,10 +53,66 @@ String moveLabel(GameNode n, {bool forceNumber = false}) => '${moveNumberText(n,
 /// Geometry of a move in every notation (D-052): moves stand close like
 /// text, 36 high; the current move is inverted in a rounded chip.
 const kMoveChipMinHeight = AppSizes.moveRow;
+
+/// Variations in the notation (D-097): the fold arrow's column and size,
+/// and the guide line along a variation.
+const _foldColumn = 20.0;
+const _foldIcon = 12.0;
+const _guideWidth = 1.5;
 const kMoveChipPadding = AppInsets.moveChip;
 
 BoxDecoration? moveChipDecoration(TabiyaText tt, {required bool current}) =>
     current ? BoxDecoration(color: tt.currentMoveBackground, borderRadius: AppRadius.xsAll) : null;
+
+/// A move's box in a line of notation: the current move's chip is drawn a
+/// little wider than the move (over the neighbours' padding), so moves can
+/// stand close and the chip still has room around its text (D-086).
+class MoveChipBox extends StatelessWidget {
+  const MoveChipBox({super.key, required this.current, required this.child, this.pill = false});
+  final bool current;
+  final Widget child;
+
+  /// The game notation's current move (D-097): a rounder pill, 8 to the
+  /// side and 3 above and below the move.
+  final bool pill;
+
+  static const double _pillOutset = 2;
+  static const double _pillHeight = 28;
+  static const double _pillRadius = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    final box = Container(
+      constraints: const BoxConstraints(minHeight: kMoveChipMinHeight),
+      padding: kMoveChipPadding,
+      child: child,
+    );
+    if (!current) return box;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: -(pill ? _pillOutset : AppInsets.moveChipOutset),
+          right: -(pill ? _pillOutset : AppInsets.moveChipOutset),
+          top: 0,
+          bottom: 0,
+          child: pill
+              ? Center(
+                  child: Container(
+                    height: _pillHeight,
+                    decoration: BoxDecoration(
+                      color: context.tt.currentMoveBackground,
+                      borderRadius: BorderRadius.circular(_pillRadius),
+                    ),
+                  ),
+                )
+              : DecoratedBox(decoration: moveChipDecoration(context.tt, current: true)!),
+        ),
+        box,
+      ],
+    );
+  }
+}
 
 /// One move outside [NotationView] (the path under the board, a line of
 /// explored moves): the same fonts, sizes and chip as the notation — the
@@ -88,24 +145,24 @@ class MoveChip extends ConsumerWidget {
     final tt = context.tt;
     final f = ref.watch(notationFormatterProvider);
     final fg = current ? tt.currentMoveForeground : color;
-    final chip = Container(
-      constraints: const BoxConstraints(minHeight: kMoveChipMinHeight),
-      padding: kMoveChipPadding,
-      decoration: moveChipDecoration(tt, current: current),
-      alignment: Alignment.center,
-      child: Text.rich(
-        TextSpan(
-          children: [
-            if (number.isNotEmpty)
-              TextSpan(
-                text: number,
-                style: tt.moveNumber.copyWith(color: fg),
-              ),
-            ...f.spans(san, tt.moveMain.copyWith(color: fg)),
-          ],
+    final chip = MoveChipBox(
+      current: current,
+      child: Align(
+        widthFactor: 1,
+        child: Text.rich(
+          TextSpan(
+            children: [
+              if (number.isNotEmpty)
+                TextSpan(
+                  text: number,
+                  style: tt.moveNumber.copyWith(color: fg),
+                ),
+              ...f.spans(san, tt.moveMain.copyWith(color: fg)),
+            ],
+          ),
+          maxLines: 1,
+          softWrap: false,
         ),
-        maxLines: 1,
-        softWrap: false,
       ),
     );
     final area = ConstrainedBox(
@@ -238,6 +295,11 @@ class _NotationViewState extends ConsumerState<NotationView> {
   /// Variations opened or folded by hand (start node -> open).
   final _open = <GameNode, bool>{};
 
+  /// Moves already shown, and whether the first frame is out: a move that
+  /// appears after it (just played) slides in, the rest simply stand.
+  final _seen = Set<GameNode>.identity();
+  var _ready = false;
+
   @override
   void didUpdateWidget(NotationView old) {
     super.didUpdateWidget(old);
@@ -268,7 +330,10 @@ class _NotationViewState extends ConsumerState<NotationView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVisible());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ready = true;
+      _ensureVisible();
+    });
   }
 
   bool _pendingRecheck = false;
@@ -398,9 +463,9 @@ class _NotationViewState extends ConsumerState<NotationView> {
       onTap: () => setState(() => _open[v] = false),
       radius: 20,
       child: SizedBox(
-        width: AppSizes.foldToggle,
+        width: _foldColumn,
         height: kMoveChipMinHeight,
-        child: Icon(AppIcons.expand, size: AppSizes.iconSm, color: context.tt.variation(depth).color),
+        child: Icon(AppIcons.expand, size: _foldIcon, color: context.tt.variation(depth).color),
       ),
     ),
   );
@@ -431,8 +496,8 @@ class _NotationViewState extends ConsumerState<NotationView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  width: AppSizes.foldToggle,
-                  child: Icon(AppIcons.chevronRight, size: AppSizes.iconSm, color: style.color),
+                  width: _foldColumn,
+                  child: Icon(AppIcons.chevronRight, size: _foldIcon, color: style.color),
                 ),
                 Flexible(
                   child: Text.rich(
@@ -456,17 +521,13 @@ class _NotationViewState extends ConsumerState<NotationView> {
   }
 
   Widget _indented(BuildContext context, int depth, Widget child) {
-    final tt = context.tt;
     final indent = TabiyaText.indentPerLevel * (depth - 1).clamp(0, TabiyaText.maxIndentDepth);
     return Padding(
       padding: EdgeInsets.only(left: indent),
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(
-            left: BorderSide(
-              color: tt.variation(depth).color!.withValues(alpha: AppOpacity.guide),
-              width: AppSpacing.xxs,
-            ),
+            left: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: _guideWidth),
           ),
         ),
         child: child,
@@ -481,7 +542,7 @@ class _NotationViewState extends ConsumerState<NotationView> {
       context,
       depth,
       Padding(
-        padding: const EdgeInsets.only(left: AppSpacing.xxs),
+        padding: const EdgeInsets.only(left: AppSpacing.xs),
         child: wrap,
       ),
     );
@@ -537,29 +598,34 @@ class _NotationViewState extends ConsumerState<NotationView> {
     final label =
         '${moveNumberText(n, forceNumber: forceNumber)} ${spokenSan(n.san!, context.l10n)} ${moveNag.map(nagSymbol).join()}'
             .trim();
+    final fresh = _ready && !_seen.contains(n);
+    _seen.add(n);
     items.add(
-      Semantics(
-        button: true,
-        selected: isCurrent,
-        label: label,
-        excludeSemantics: true,
-        child: GestureDetector(
-          key: isCurrent ? _currentKey : null,
-          behavior: HitTestBehavior.opaque,
-          onTap: () => widget.onSelect(n),
-          onLongPressStart: widget.onLongPress == null ? null : (d) => widget.onLongPress!(n, d.globalPosition),
-          child: Container(
+      MoveEntrance(
+        key: ObjectKey(n),
+        play: fresh,
+        child: Semantics(
+          button: true,
+          selected: isCurrent,
+          label: label,
+          excludeSemantics: true,
+          child: GestureDetector(
+            key: isCurrent ? _currentKey : null,
+            behavior: HitTestBehavior.opaque,
+            onTap: () => widget.onSelect(n),
+            onLongPressStart: widget.onLongPress == null ? null : (d) => widget.onLongPress!(n, d.globalPosition),
             // Dense rows the user asked for (36 high, D-046): moves stand
-            // close like text; still a comfortable 36 x 40 target.
-            constraints: const BoxConstraints(minHeight: kMoveChipMinHeight, minWidth: 40),
-            padding: kMoveChipPadding,
-            decoration: moveChipDecoration(tt, current: isCurrent),
-            // widthFactor keeps the chip as wide as the move (inside a Wrap
-            // a bare alignment would stretch it to the full line).
-            child: Align(
-              alignment: Alignment.centerLeft,
-              widthFactor: 1,
-              child: Text.rich(TextSpan(children: spans)),
+            // close like text, without gaps between their targets (D-086).
+            child: MoveChipBox(
+              current: isCurrent,
+              pill: true,
+              // widthFactor keeps the chip as wide as the move (inside a Wrap
+              // a bare alignment would stretch it to the full line).
+              child: Align(
+                alignment: Alignment.centerLeft,
+                widthFactor: 1,
+                child: Text.rich(TextSpan(children: spans)),
+              ),
             ),
           ),
         ),

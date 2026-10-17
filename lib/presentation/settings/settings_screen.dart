@@ -80,6 +80,7 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l.settingsTitle)),
       body: ListView(
+        padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom).inPage(context),
         children: groupIntoCards([
           SectionHeader(l.general),
           ChoiceTile<String?>(

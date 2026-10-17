@@ -582,7 +582,7 @@
       }
     }
   },
-  "engineFlagHint": "Engine prefers {best} (depth {depth}). Nothing was changed.",
+  "engineFlagHint": "Engine prefers {best} (depth {depth}).",
   "@engineFlagHint": {
     "placeholders": {
       "best": {
@@ -1290,17 +1290,6 @@
     }
   },
   "forecastTitle": "Review forecast",
-  "forecastSummary": "Next 7 days: {week} · 30 days: {month}",
-  "@forecastSummary": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      },
-      "month": {
-        "type": "int"
-      }
-    }
-  },
   "retentionTitle": "Retention",
   "retentionHint": "Share of correct answers in scheduled reviews",
   "days7": "7 days ({count})",
@@ -2050,5 +2039,98 @@
   "newShort": "New",
   "importShort": "Import",
   "trainFromHereLong": "Train from here",
-  "arrowsShort": "Arrows"
+  "arrowsShort": "Arrows",
+  "pickFromCatalog": "Pick from the opening catalog",
+  "trainDueCount": "Train: {count} to review",
+  "@trainDueCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "popularOpenings": "Popular",
+  "allOpenings": "All openings",
+  "otherShort": "Other",
+  "activitySummary": "Days trained: {days} · answers: {total}",
+  "@activitySummary": {
+    "placeholders": {
+      "days": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "legendBelowGoal": "below goal",
+  "legendGoal": "goal",
+  "todayShort": "today",
+  "engineApply": "Make {san} main",
+  "@engineApply": {
+    "placeholders": {
+      "san": {"type": "String"}
+    }
+  },
+  "engineKeepMine": "Keep my move",
+  "engineApplied": "{best} is main now; {old} is an alternative",
+  "@engineApplied": {
+    "placeholders": {
+      "best": {"type": "String"},
+      "old": {"type": "String"}
+    }
+  },
+  "engineKept": "Flag cleared: {san} stays the main move",
+  "@engineKept": {
+    "placeholders": {
+      "san": {"type": "String"}
+    }
+  },
+  "weekAnswersTotal": "{count, plural, one{{count} answer this week} other{{count} answers this week}}",
+  "@weekAnswersTotal": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "statLearnedCaption": "Learned",
+  "learnedOfTotal": "{learned} of {total, plural, one{{total} move} other{{total} moves}}",
+  "@learnedOfTotal": {
+    "placeholders": {
+      "learned": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "forecastNext7Short": "in 7 days",
+  "forecastSummaryAvg": "Today {today} · {avg} a day on average",
+  "@forecastSummaryAvg": {
+    "placeholders": {
+      "today": {"type": "int"},
+      "avg": {"type": "String"}
+    }
+  },
+  "forecastLegendWeek": "next 7 days",
+  "forecastLegendLater": "later",
+  "answersCount": "{count, plural, one{{count} answer} other{{count} answers}}",
+  "@answersCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "retentionTrendUp": "This week {d} pp better than the 90-day average",
+  "@retentionTrendUp": {
+    "placeholders": {
+      "d": {"type": "int"}
+    }
+  },
+  "retentionTrendDown": "This week {d} pp worse than the 90-day average",
+  "@retentionTrendDown": {
+    "placeholders": {
+      "d": {"type": "int"}
+    }
+  },
+  "trainFromHereShort": "From here",
+  "problemsCount": "{count, plural, one{{count} problem} other{{count} problems}}",
+  "@problemsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "opponentShareHeader": "share",
+  "retentionPeriod7": "7 days",
+  "retentionPeriod30": "30 days",
+  "retentionPeriod90": "90 days"
 }

@@ -222,3 +222,84 @@ class _AppearState extends State<Appear> with SingleTickerProviderStateMixin {
     child: FadeTransition(opacity: _fade, child: widget.child),
   );
 }
+
+/// A move joining a line of notation: it slides in a little from the
+/// right, fades in and settles with a soft overshoot. [play] decides once,
+/// when the move is first built: moves that were there already (the line
+/// on opening a screen) simply stand. With [play] left null the nearest
+/// [EntranceScope] decides: moves built after its first frame play.
+class MoveEntrance extends StatefulWidget {
+  const MoveEntrance({super.key, this.play, required this.child});
+  final bool? play;
+  final Widget child;
+
+  @override
+  State<MoveEntrance> createState() => _MoveEntranceState();
+}
+
+class _MoveEntranceState extends State<MoveEntrance> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: AppMotion.enterMs, value: 1);
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _c,
+    curve: const Interval(0, 0.6, curve: Curves.easeOut),
+  );
+  late final Animation<double> _settle = CurvedAnimation(parent: _c, curve: AppMotion.accent);
+  var _decided = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_decided) return;
+    _decided = true;
+    final play = widget.play ?? EntranceScope._ready(context);
+    if (play && AppMotion.of(context).enabled) _c.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _c,
+    child: widget.child,
+    builder: (context, child) {
+      if (_c.isCompleted) return child!;
+      final t = _settle.value;
+      return Opacity(
+        opacity: _fade.value,
+        child: Transform.translate(
+          offset: Offset(AppSpacing.md * (1 - t), 0),
+          child: Transform.scale(scale: 0.7 + 0.3 * t, alignment: Alignment.centerLeft, child: child),
+        ),
+      );
+    },
+  );
+}
+
+/// The area a line of moves lives in (the path under the board): moves
+/// present on its first frame stand, moves added later play [MoveEntrance].
+class EntranceScope extends StatefulWidget {
+  const EntranceScope({super.key, required this.child});
+  final Widget child;
+
+  static bool _ready(BuildContext context) => context.findAncestorStateOfType<_EntranceScopeState>()?._ready ?? false;
+
+  @override
+  State<EntranceScope> createState() => _EntranceScopeState();
+}
+
+class _EntranceScopeState extends State<EntranceScope> {
+  var _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ready = true);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}

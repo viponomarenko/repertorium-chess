@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import '../../../core/l10n.dart';
 import '../../theme/app_icons.dart';
 import '../../theme/app_theme.dart';
+import 'notice.dart';
 import 'sheets.dart';
 
 class EmptyState extends StatelessWidget {
@@ -23,30 +24,35 @@ class EmptyState extends StatelessWidget {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: AppSizes.iconHero, color: theme.colorScheme.onSurfaceVariant),
-            AppGap.v16,
-            Text(title, style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
-            if (message != null) ...[
-              AppGap.v8,
-              Text(
-                message!,
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                textAlign: TextAlign.center,
-              ),
+        // A short message stays a short column on a wide screen, and its
+        // main button does not stretch from edge to edge.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppSizes.maxMessageWidth),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: AppSizes.iconHero, color: theme.colorScheme.onSurfaceVariant),
+              AppGap.v16,
+              Text(title, style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+              if (message != null) ...[
+                AppGap.v8,
+                Text(
+                  message!,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              if (actions.isNotEmpty) ...[
+                AppGap.v24,
+                Wrap(
+                  spacing: AppSpacing.md,
+                  runSpacing: AppSpacing.md,
+                  alignment: WrapAlignment.center,
+                  children: actions,
+                ),
+              ],
             ],
-            if (actions.isNotEmpty) ...[
-              AppGap.v24,
-              Wrap(
-                spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
-                alignment: WrapAlignment.center,
-                children: actions,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -230,11 +236,10 @@ class _PromptDialogState extends State<_PromptDialog> {
   }
 }
 
-void showSnack(BuildContext context, String text, {SnackBarAction? action}) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(text), action: action));
-}
+/// A short message about what just happened, at the top of the screen
+/// ([showNotice], D-087); [action] gives its one button ("Undo").
+void showSnack(BuildContext context, String text, {SnackBarAction? action}) =>
+    showNotice(text, actionLabel: action?.label, onAction: action?.onPressed);
 
 /// Modal progress with optional cancel. Returns a handle to update/close it.
 class ProgressHandle {
@@ -300,7 +305,51 @@ ProgressHandle showProgress(BuildContext context, String message, {VoidCallback?
 /// Responsive helper: wide layouts (tablets, landscape).
 bool isWide(BuildContext context) {
   final size = MediaQuery.sizeOf(context);
-  return size.width >= 700 || (size.width > size.height && size.width >= 560);
+  return size.width >= AppBreakpoints.wide || (size.width > size.height && size.width >= AppBreakpoints.wideLandscape);
+}
+
+/// The width a page has to itself: the screen, less the navigation at the
+/// side. Sheets and panels beside the board set their own.
+class PageScope extends InheritedWidget {
+  const PageScope({super.key, required this.width, required super.child});
+  final double width;
+
+  /// Measures the room given to [child] and tells it to the pages inside.
+  static Widget measured({required Widget child}) => LayoutBuilder(
+    builder: (context, c) => PageScope(width: c.maxWidth, child: child),
+  );
+
+  static double widthOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PageScope>()?.width ?? MediaQuery.sizeOf(context).width;
+
+  @override
+  bool updateShouldNotify(PageScope old) => old.width != width;
+}
+
+/// The margin that keeps a page a readable column in the middle of a wide
+/// screen (zero on a phone). It goes into the padding of the list, not
+/// around it, so the page scrolls from anywhere on the screen.
+double pageGutter(BuildContext context, {double width = AppSizes.maxContentWidth}) =>
+    math.max(0, (PageScope.widthOf(context) - width) / 2);
+
+extension PageInsets on EdgeInsets {
+  /// These insets plus the [pageGutter] at the sides.
+  EdgeInsets inPage(BuildContext context, {double width = AppSizes.maxContentWidth}) =>
+      this + EdgeInsets.symmetric(horizontal: pageGutter(context, width: width));
+}
+
+/// Something above or below a list (a search field, filters, a note) kept
+/// in the same column as the list.
+class PageColumn extends StatelessWidget {
+  const PageColumn({super.key, required this.child, this.width = AppSizes.maxContentWidth});
+  final Widget child;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.symmetric(horizontal: pageGutter(context, width: width)),
+    child: child,
+  );
 }
 
 class StatTile extends StatelessWidget {
@@ -375,7 +424,8 @@ class StickyActionBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: AppInsets.actionBar,
+          // In the column of the page above it.
+          padding: AppInsets.actionBar.inPage(context),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -621,11 +671,8 @@ class ChoiceTile<T> extends StatelessWidget {
       ),
       trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
       onTap: () async {
-        final picked = await showModalBottomSheet<ChoiceOption<T>>(
-          context: context,
-          useRootNavigator: true,
-          showDragHandle: true,
-          isScrollControlled: true,
+        final picked = await showAppModal<ChoiceOption<T>>(
+          context,
           builder: (ctx) => SafeArea(
             child: SingleChildScrollView(
               child: Column(
@@ -751,7 +798,15 @@ class ThumbBar extends StatelessWidget {
       top: false,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-        child: Row(children: children),
+        // Across a tablet the buttons stay a group in the middle, not
+        // five slabs a hand apart.
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppSizes.maxContentWidth),
+            child: Row(children: children),
+          ),
+        ),
       ),
     ),
   );

@@ -26,9 +26,10 @@ class AppPage extends StatelessWidget {
   final ScrollController? controller;
 
   @override
-  Widget build(BuildContext context) => MaxWidth(
-    width: maxWidth,
-    child: ListView(controller: controller, padding: padding, children: children),
+  Widget build(BuildContext context) => ListView(
+    controller: controller,
+    padding: padding.inPage(context, width: maxWidth),
+    children: children,
   );
 }
 
@@ -444,6 +445,112 @@ class PillSwitch extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [for (var i = 0; i < labels.length; i++) Flexible(child: pill(i))],
+      ),
+    );
+  }
+}
+
+/// Two views of the same thing as icons in a capsule (D-095): a black
+/// puck slides under the chosen one with a small overshoot, the icons
+/// change colour softly. Each icon is a full 48 tap target; the words are
+/// in the tooltips and the semantics.
+class IconSegmentedSwitch extends StatelessWidget {
+  const IconSegmentedSwitch({
+    super.key,
+    required this.icons,
+    required this.labels,
+    required this.selected,
+    required this.onChanged,
+  }) : assert(icons.length == labels.length);
+  final List<IconData> icons;
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onChanged;
+
+  /// The capsule, its inner padding, the puck and the icon size.
+  static const double _capsule = 36;
+  static const double _inset = 3;
+  static const double _puckWidth = 44;
+  static const double _puckHeight = 30;
+  static const double _icon = 18;
+  static const double _shadowAlpha = 0.22;
+  static const double _shadowBlur = 3;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final m = AppMotion.of(context);
+    final n = icons.length;
+    const slot = AppSizes.tapTarget;
+    final width = slot * n + 2 * _inset;
+    return SizedBox(
+      width: width,
+      height: AppSizes.tapTarget,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            height: _capsule,
+            decoration: BoxDecoration(color: cs.secondaryContainer, borderRadius: AppRadius.full),
+          ),
+          AnimatedPositioned(
+            duration: m.enter,
+            curve: AppMotion.accent,
+            left: _inset + slot * selected + (slot - _puckWidth) / 2,
+            top: (AppSizes.tapTarget - _puckHeight) / 2,
+            width: _puckWidth,
+            height: _puckHeight,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: cs.primary,
+                borderRadius: AppRadius.full,
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.shadow.withValues(alpha: _shadowAlpha),
+                    blurRadius: _shadowBlur,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned.fill(
+            left: _inset,
+            right: _inset,
+            child: Row(
+              children: [
+                for (var i = 0; i < n; i++)
+                  Semantics(
+                    button: true,
+                    selected: selected == i,
+                    label: labels[i],
+                    excludeSemantics: true,
+                    child: Tooltip(
+                      message: labels[i],
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          if (selected != i) Haptics.selection();
+                          onChanged(i);
+                        },
+                        child: SizedBox(
+                          width: slot,
+                          height: AppSizes.tapTarget,
+                          child: Center(
+                            child: TweenAnimationBuilder<Color?>(
+                              tween: ColorTween(end: selected == i ? cs.onPrimary : cs.onSurface),
+                              duration: m.base,
+                              builder: (context, c, _) => Icon(icons[i], size: _icon, color: c),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

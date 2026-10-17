@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabiya/presentation/theme/typography.dart';
-import 'package:tabiya/presentation/widgets/notation_view.dart';
+import 'package:tabiya/presentation/widgets/ui/motion.dart';
 
 import 'harness.dart';
 import 'screens_guidelines_test.dart' show deepKey, seedRepertoire;
@@ -13,7 +13,8 @@ void main() {
     testWidgets('path moves use the notation style on $route', (tester) async {
       final app = await pumpApp(tester, seed: seedRepertoire, size: const Size(402, 874));
       await goTo(tester, route);
-      final chips = find.byType(MoveChip);
+      // The path's moves (each slides in as it joins the path, D-086).
+      final chips = find.byType(MoveEntrance);
       expect(chips, findsWidgets);
       final tt = tester.element(chips.first).tt;
       final sizes = <double?>{};

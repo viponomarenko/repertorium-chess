@@ -140,7 +140,12 @@ class _MyGamesScreenState extends ConsumerState<MyGamesScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.page, AppSpacing.md, AppSpacing.page, AppSpacing.md),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.page,
+              AppSpacing.md,
+              AppSpacing.page,
+              AppSpacing.md,
+            ).inPage(context),
             child: Wrap(
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
@@ -170,15 +175,17 @@ class _MyGamesScreenState extends ConsumerState<MyGamesScreen> {
             ),
           ),
           if (_syncing != null)
-            ListTile(
-              leading: const InlineSpinner(),
-              title: Text(l.downloading(_progress?.downloaded ?? 0, _progress?.added ?? 0)),
-              subtitle: _progress?.message == null ? null : Text(_progress!.message!),
-              trailing: TextButton(onPressed: () => setState(() => _cancel = true), child: Text(l.stop)),
+            PageColumn(
+              child: ListTile(
+                leading: const InlineSpinner(),
+                title: Text(l.downloading(_progress?.downloaded ?? 0, _progress?.added ?? 0)),
+                subtitle: _progress?.message == null ? null : Text(_progress!.message!),
+                trailing: TextButton(onPressed: () => setState(() => _cancel = true), child: Text(l.stop)),
+              ),
             ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: AppInsets.pageH,
+            padding: AppInsets.pageH.inPage(context),
             child: Row(
               children: [
                 for (final (v, label) in [('all', l.all), ('lichess', 'Lichess'), ('chesscom', 'Chess.com')])
@@ -201,7 +208,7 @@ class _MyGamesScreenState extends ConsumerState<MyGamesScreen> {
                 : shown.isEmpty
                 ? EmptyState(icon: AppIcons.myGames, title: l.noDownloadedGames, message: l.noDownloadedGamesHint)
                 : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.listBottom),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
                     itemCount: shown.length,
                     itemBuilder: (context, i) {
                       final g = shown[i];

@@ -25,7 +25,7 @@ Future<void> _loadFonts() async {
     await loader.load();
   }
 
-  await family('GoogleSans', ['assets/fonts/google_sans/GoogleSans[GRAD,opsz,wght].ttf']);
+  await family('Exo2', ['assets/fonts/exo2/Exo2[wght].ttf']);
   await family('GoogleSansCode', ['assets/fonts/google_sans_code/GoogleSansCode[wght].ttf']);
   await family('TabiyaSymbols', ['assets/fonts/noto_sans_math/TabiyaSymbols-Regular.ttf']);
   // App icons (a package font: family and asset carry the package prefix).

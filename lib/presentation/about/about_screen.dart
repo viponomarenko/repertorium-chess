@@ -39,7 +39,8 @@ const kComponents = <(String, String, String)>[
   ),
   ('file_picker, flutter_local_notifications, timezone', 'MIT / BSD', 'https://pub.dev'),
   ('flutter_timezone', 'Apache-2.0', 'https://pub.dev/packages/flutter_timezone'),
-  ('Font: Google Sans, Google Sans Code', 'SIL OFL 1.1', 'https://github.com/googlefonts/googlesans'),
+  ('Font: Exo 2', 'SIL OFL 1.1', 'https://github.com/googlefonts/Exo-2.0'),
+  ('Font: Google Sans Code', 'SIL OFL 1.1', 'https://github.com/googlefonts/googlesans-code'),
   ('Font: Noto Sans Math (subset "TabiyaSymbols")', 'SIL OFL 1.1', 'https://github.com/notofonts/math'),
 ];
 
@@ -56,7 +57,7 @@ class AboutScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l.aboutTitle)),
       body: ListView(
-        padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.listBottom),
+        padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.listBottom).inPage(context),
         children: [
           const Center(child: AppLogo(size: _logoSize)),
           AppGap.v8,

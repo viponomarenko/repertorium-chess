@@ -230,12 +230,6 @@ class AppTheme {
           ),
         ),
       ),
-      navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: cs.surfaceContainerLow,
-        indicatorColor: cs.surfaceContainerHigh,
-        selectedIconTheme: IconThemeData(color: cs.onSurface),
-        unselectedIconTheme: IconThemeData(color: cs.onSurfaceVariant),
-      ),
       tabBarTheme: TabBarThemeData(
         labelStyle: t.titleSmall,
         unselectedLabelStyle: t.titleSmall,
@@ -249,7 +243,9 @@ class AppTheme {
         iconColor: cs.onSurface,
         selectedColor: cs.onSurface,
         selectedTileColor: cs.surfaceContainerHigh,
-        titleTextStyle: t.bodyLarge,
+        // A row's name in the title role (14 SemiBold, ink) over its grey
+        // explanation: the two read apart at a glance (D-091).
+        titleTextStyle: t.titleMedium?.copyWith(color: cs.onSurface),
         subtitleTextStyle: t.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
       ),
       // Back/close buttons use the app's icon set too.
@@ -349,6 +345,14 @@ extension TabiyaColors on ColorScheme {
   /// otherwise monochrome home screen (progress, not an alarm).
   Color get flame => brightness == Brightness.light ? const Color(0xFFF26B1D) : const Color(0xFFFF8A3D);
 
+  /// A soft warm ground under goal and streak marks: the streak chain, the
+  /// disc in the goal ring, the streak tile, the "time to review" chip.
+  Color get flameContainer => brightness == Brightness.light ? const Color(0xFFFDEEE4) : const Color(0xFF3A2414);
+  Color get onFlameContainer => brightness == Brightness.light ? const Color(0xFF8A3A0B) : const Color(0xFFFFD2B8);
+
+  /// The track of a day ring that is not full yet.
+  Color get flameTrack => brightness == Brightness.light ? const Color(0xFFF6CDB3) : const Color(0xFF5A3520);
+
   // Chess meanings (D-075). The two sides look the same in both themes:
   // they stand for the pieces, not for the interface.
 
@@ -387,11 +391,15 @@ abstract final class BoardColors {
   /// Another move the repertoire accepts; a second-level hint.
   static const alternativeMove = Color(0x99003088);
 
-  /// What the opponent may play.
-  static const opponentMove = Color(0x99882020);
+  /// What the opponent may play: graphite, so red stays for mistakes
+  /// (D-095).
+  static const opponentMove = Color(0x8C2C2C2E);
 
   /// The engine's best move, under everything else.
   static const engineMove = Color(0x66003088);
+
+  /// The first move of the engine's second line, fainter (D-097).
+  static const engineMoveSecond = Color(0x38003088);
 
   static const shadow = Color(0x33000000);
 

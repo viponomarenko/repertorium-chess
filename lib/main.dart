@@ -15,7 +15,7 @@ import 'presentation/widgets/board_view.dart';
 
 /// Bundled fonts and their licenses (T-05), shown on the licenses page.
 const _fontLicenses = {
-  'Google Sans': 'assets/fonts/google_sans/OFL.txt',
+  'Exo 2': 'assets/fonts/exo2/OFL.txt',
   'Google Sans Code': 'assets/fonts/google_sans_code/OFL.txt',
   'Noto Sans Math (TabiyaSymbols subset)': 'assets/fonts/noto_sans_math/OFL.txt',
 };

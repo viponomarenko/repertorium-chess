@@ -226,25 +226,20 @@ class _ImportWizardScreenState extends ConsumerState<ImportWizardScreen> {
     // Back to where the import started (e.g. an unsaved analysis stays
     // open); the snackbar opens the repertoire.
     final router = GoRouter.of(context);
-    final messenger = ScaffoldMessenger.of(context);
     context.pop();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(l.importDone(r?.stats.newMoves ?? 0)),
-        // New moves: learn them right away (then back to the file);
-        // otherwise open the repertoire.
-        action: (r?.stats.newMoves ?? 0) > 0
-            ? SnackBarAction(
-                label: l.learnNow,
-                onPressed: () => router.push(
-                  '/train',
-                  extra: TrainingArgs(repertoireIds: [id], mode: TrainingMode.learn),
-                ),
-              )
-            : (_targetId == widget.request.targetRepertoireId && _targetId != null
-                  ? null
-                  : SnackBarAction(label: l.openAction, onPressed: () => router.go('/repertoires/$id'))),
-      ),
+    // New moves: learn them right away (then back to the file); otherwise
+    // open the repertoire.
+    final learn = (r?.stats.newMoves ?? 0) > 0;
+    final open = !learn && !(_targetId == widget.request.targetRepertoireId && _targetId != null);
+    showNotice(
+      l.importDone(r?.stats.newMoves ?? 0),
+      actionLabel: learn ? l.learnNow : (open ? l.openAction : null),
+      onAction: learn
+          ? () => router.push(
+              '/train',
+              extra: TrainingArgs(repertoireIds: [id], mode: TrainingMode.learn),
+            )
+          : (open ? () => router.go('/repertoires/$id') : null),
     );
   }
 
@@ -309,230 +304,228 @@ class _ImportWizardScreenState extends ConsumerState<ImportWizardScreen> {
     final reps = ref.watch(repertoiresProvider).value ?? const <RepertoireSummary>[];
     final games = widget.request.games;
     final p = _preview;
-    return MaxWidth(
-      child: ListView(
-        padding: AppInsets.page,
-        children: [
-          Text(l.targetRepertoire, style: context.tt.title),
-          AppGap.v8,
-          DropdownButtonFormField<int?>(
-            icon: const Icon(AppIcons.expand, size: AppSizes.iconMd),
-            initialValue: _targetId,
-            isExpanded: true,
-            items: [
-              DropdownMenuItem(value: null, child: Text(l.newRepertoire)),
-              for (final r in reps)
-                DropdownMenuItem(
-                  value: r.row.id,
-                  child: Text(
-                    '${r.row.name} (${r.color == Side.white ? l.white : l.black})',
-                    overflow: TextOverflow.ellipsis,
-                  ),
+    return ListView(
+      padding: AppInsets.page.inPage(context),
+      children: [
+        Text(l.targetRepertoire, style: context.tt.title),
+        AppGap.v8,
+        DropdownButtonFormField<int?>(
+          icon: const Icon(AppIcons.expand, size: AppSizes.iconMd),
+          initialValue: _targetId,
+          isExpanded: true,
+          items: [
+            DropdownMenuItem(value: null, child: Text(l.newRepertoire)),
+            for (final r in reps)
+              DropdownMenuItem(
+                value: r.row.id,
+                child: Text(
+                  '${r.row.name} (${r.color == Side.white ? l.white : l.black})',
+                  overflow: TextOverflow.ellipsis,
                 ),
-            ],
+              ),
+          ],
+          onChanged: (v) {
+            setState(() => _targetId = v);
+            _schedulePreview();
+          },
+        ),
+        if (_targetId == null) ...[
+          AppGap.v12,
+          TextField(
+            controller: _newName,
+            decoration: InputDecoration(labelText: l.name),
+          ),
+          AppGap.v12,
+          ChoiceSegments<Side>(
+            options: [ChoiceOption(Side.white, l.iPlayWhite), ChoiceOption(Side.black, l.iPlayBlack)],
+            selected: _newColor,
             onChanged: (v) {
-              setState(() => _targetId = v);
+              setState(() => _newColor = v);
               _schedulePreview();
             },
           ),
-          if (_targetId == null) ...[
-            AppGap.v12,
-            TextField(
-              controller: _newName,
-              decoration: InputDecoration(labelText: l.name),
-            ),
-            AppGap.v12,
-            ChoiceSegments<Side>(
-              options: [ChoiceOption(Side.white, l.iPlayWhite), ChoiceOption(Side.black, l.iPlayBlack)],
-              selected: _newColor,
-              onChanged: (v) {
-                setState(() => _newColor = v);
-                _schedulePreview();
-              },
-            ),
-          ],
-          AppGap.v16,
-          if (widget.request.startNode != null)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(AppIcons.repertoire),
-              title: MovesText(l.subtreeFrom(formatLine(widget.request.startNode!.line))),
-            )
-          else if (games.length > 1)
-            AppExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              title: Text(l.gamesSelected(_selected.length, games.length)),
-              children: [
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        _selected.addAll(List.generate(games.length, (i) => i));
-                        _schedulePreview();
-                      },
-                      child: Text(l.selectAll),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        _selected.clear();
-                        _schedulePreview();
-                      },
-                      child: Text(l.selectNone),
-                    ),
-                  ],
-                ),
-                for (var i = 0; i < games.length && i < 500; i++)
-                  CheckboxListTile(
-                    value: _selected.contains(i),
-                    title: Text(_gameTitle(games[i], i, l)),
-                    onChanged: (v) {
-                      setState(() => v == true ? _selected.add(i) : _selected.remove(i));
-                      _schedulePreview();
-                    },
-                  ),
-              ],
-            ),
-          // The usual choices are already made; they open on demand (D-068).
+        ],
+        AppGap.v16,
+        if (widget.request.startNode != null)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(AppIcons.repertoire),
+            title: MovesText(l.subtreeFrom(formatLine(widget.request.startNode!.line))),
+          )
+        else if (games.length > 1)
           AppExpansionTile(
             tilePadding: EdgeInsets.zero,
-            title: Text(l.importOptions),
-            subtitle: Text(l.importOptionsHint),
+            title: Text(l.gamesSelected(_selected.length, games.length)),
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  AppGap.v8,
-                  Text(l.ownMoves, style: context.tt.title),
-                  RadioGroup<bool>(
-                    groupValue: _opts.ownAllVariations,
-                    onChanged: (v) {
-                      setState(() => _opts = _opts.copyWith(ownAllVariations: v));
+                  TextButton(
+                    onPressed: () {
+                      _selected.addAll(List.generate(games.length, (i) => i));
                       _schedulePreview();
                     },
-                    child: Column(
-                      children: [
-                        RadioListTile<bool>(
-                          contentPadding: EdgeInsets.zero,
-                          value: false,
-                          title: Text(l.mainLineOnly),
-                          subtitle: Text(l.ownMainOnlyHint),
-                        ),
-                        RadioListTile<bool>(
-                          contentPadding: EdgeInsets.zero,
-                          value: true,
-                          title: Text(l.allVariations),
-                          subtitle: Text(l.ownAllHint),
-                        ),
-                      ],
-                    ),
+                    child: Text(l.selectAll),
                   ),
-                  Text(l.opponentMovesTitle, style: context.tt.title),
-                  RadioGroup<bool>(
-                    groupValue: _opts.opponentAllVariations,
-                    onChanged: (v) {
-                      setState(() => _opts = _opts.copyWith(opponentAllVariations: v));
+                  TextButton(
+                    onPressed: () {
+                      _selected.clear();
                       _schedulePreview();
                     },
-                    child: Column(
-                      children: [
-                        RadioListTile<bool>(contentPadding: EdgeInsets.zero, value: true, title: Text(l.allVariations)),
-                        RadioListTile<bool>(contentPadding: EdgeInsets.zero, value: false, title: Text(l.mainLineOnly)),
-                      ],
-                    ),
-                  ),
-                  AppGap.v8,
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _opts.maxPly != null,
-                    title: Text(l.limitDepth),
-                    subtitle: Text(
-                      _opts.maxPly == null ? l.maxDepthUnlimited : l.maxDepthPlies((_opts.maxPly! + 1) ~/ 2),
-                    ),
-                    onChanged: (v) {
-                      setState(() => _opts = v ? _opts.copyWith(maxPly: 20) : _opts.copyWith(clearMaxPly: true));
-                      _schedulePreview();
-                    },
-                  ),
-                  if (_opts.maxPly != null)
-                    Slider(
-                      value: _opts.maxPly!.toDouble(),
-                      min: 2,
-                      max: 60,
-                      divisions: 29,
-                      label: '${_opts.maxPly}',
-                      onChanged: (v) {
-                        setState(() => _opts = _opts.copyWith(maxPly: v.round()));
-                        _schedulePreview();
-                      },
-                    ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _opts.includeComments,
-                    title: Text(l.transferComments),
-                    onChanged: (v) {
-                      setState(() => _opts = _opts.copyWith(includeComments: v));
-                      _schedulePreview();
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _opts.includeShapes,
-                    title: Text(l.transferArrows),
-                    onChanged: (v) {
-                      setState(() => _opts = _opts.copyWith(includeShapes: v));
-                      _schedulePreview();
-                    },
+                    child: Text(l.selectNone),
                   ),
                 ],
+              ),
+              for (var i = 0; i < games.length && i < 500; i++)
+                CheckboxListTile(
+                  value: _selected.contains(i),
+                  title: Text(_gameTitle(games[i], i, l)),
+                  onChanged: (v) {
+                    setState(() => v == true ? _selected.add(i) : _selected.remove(i));
+                    _schedulePreview();
+                  },
+                ),
+            ],
+          ),
+        // The usual choices are already made; they open on demand (D-068).
+        AppExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          title: Text(l.importOptions),
+          subtitle: Text(l.importOptionsHint),
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppGap.v8,
+                Text(l.ownMoves, style: context.tt.title),
+                RadioGroup<bool>(
+                  groupValue: _opts.ownAllVariations,
+                  onChanged: (v) {
+                    setState(() => _opts = _opts.copyWith(ownAllVariations: v));
+                    _schedulePreview();
+                  },
+                  child: Column(
+                    children: [
+                      RadioListTile<bool>(
+                        contentPadding: EdgeInsets.zero,
+                        value: false,
+                        title: Text(l.mainLineOnly),
+                        subtitle: Text(l.ownMainOnlyHint),
+                      ),
+                      RadioListTile<bool>(
+                        contentPadding: EdgeInsets.zero,
+                        value: true,
+                        title: Text(l.allVariations),
+                        subtitle: Text(l.ownAllHint),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(l.opponentMovesTitle, style: context.tt.title),
+                RadioGroup<bool>(
+                  groupValue: _opts.opponentAllVariations,
+                  onChanged: (v) {
+                    setState(() => _opts = _opts.copyWith(opponentAllVariations: v));
+                    _schedulePreview();
+                  },
+                  child: Column(
+                    children: [
+                      RadioListTile<bool>(contentPadding: EdgeInsets.zero, value: true, title: Text(l.allVariations)),
+                      RadioListTile<bool>(contentPadding: EdgeInsets.zero, value: false, title: Text(l.mainLineOnly)),
+                    ],
+                  ),
+                ),
+                AppGap.v8,
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _opts.maxPly != null,
+                  title: Text(l.limitDepth),
+                  subtitle: Text(
+                    _opts.maxPly == null ? l.maxDepthUnlimited : l.maxDepthPlies((_opts.maxPly! + 1) ~/ 2),
+                  ),
+                  onChanged: (v) {
+                    setState(() => _opts = v ? _opts.copyWith(maxPly: 20) : _opts.copyWith(clearMaxPly: true));
+                    _schedulePreview();
+                  },
+                ),
+                if (_opts.maxPly != null)
+                  Slider(
+                    value: _opts.maxPly!.toDouble(),
+                    min: 2,
+                    max: 60,
+                    divisions: 29,
+                    label: '${_opts.maxPly}',
+                    onChanged: (v) {
+                      setState(() => _opts = _opts.copyWith(maxPly: v.round()));
+                      _schedulePreview();
+                    },
+                  ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _opts.includeComments,
+                  title: Text(l.transferComments),
+                  onChanged: (v) {
+                    setState(() => _opts = _opts.copyWith(includeComments: v));
+                    _schedulePreview();
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _opts.includeShapes,
+                  title: Text(l.transferArrows),
+                  onChanged: (v) {
+                    setState(() => _opts = _opts.copyWith(includeShapes: v));
+                    _schedulePreview();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        AppGap.v24,
+        Text(l.preview, style: context.tt.title),
+        AppGap.v8,
+        if (p == null)
+          const LinearProgressIndicator()
+        else ...[
+          Wrap(
+            spacing: AppSpacing.xl,
+            runSpacing: AppSpacing.md,
+            children: [
+              StatTile(value: context.fmtInt(p.stats.newPositions), label: l.newPositions),
+              StatTile(value: context.fmtInt(p.stats.newMoves), label: l.newMoves),
+              StatTile(value: context.fmtInt(p.stats.matchedMoves), label: l.matchedMoves),
+              StatTile(
+                value: context.fmtInt(p.conflicts.length),
+                label: l.conflicts,
+                color: p.conflicts.isEmpty ? null : theme.colorScheme.error,
               ),
             ],
           ),
-          AppGap.v24,
-          Text(l.preview, style: context.tt.title),
-          AppGap.v8,
-          if (p == null)
-            const LinearProgressIndicator()
-          else ...[
-            Wrap(
-              spacing: AppSpacing.xl,
-              runSpacing: AppSpacing.md,
-              children: [
-                StatTile(value: context.fmtInt(p.stats.newPositions), label: l.newPositions),
-                StatTile(value: context.fmtInt(p.stats.newMoves), label: l.newMoves),
-                StatTile(value: context.fmtInt(p.stats.matchedMoves), label: l.matchedMoves),
-                StatTile(
-                  value: context.fmtInt(p.conflicts.length),
-                  label: l.conflicts,
-                  color: p.conflicts.isEmpty ? null : theme.colorScheme.error,
-                ),
-              ],
-            ),
-            if (!p.reachedRepertoire) ...[
-              AppGap.v12,
-              InfoStrip(icon: AppIcons.error, text: l.nothingToImport, tone: Tone.error),
-            ],
-            if (p.stats.commentCollisions > 0) ...[
-              AppGap.v12,
-              Text(l.commentCollisions(p.stats.commentCollisions)),
-              AppGap.v8,
-              ChoiceSegments<CommentPolicy>(
-                options: [
-                  ChoiceOption(CommentPolicy.keepOld, l.keepOld),
-                  ChoiceOption(CommentPolicy.replace, l.replace),
-                  ChoiceOption(CommentPolicy.merge, l.merge),
-                ],
-                selected: _opts.commentPolicy,
-                onChanged: (v) => setState(() => _opts = _opts.copyWith(commentPolicy: v)),
-              ),
-            ],
-            if (p.conflicts.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.md),
-                child: Text(l.conflictsWillBeShown, style: context.tt.meta),
-              ),
+          if (!p.reachedRepertoire) ...[
+            AppGap.v12,
+            InfoStrip(icon: AppIcons.error, text: l.nothingToImport, tone: Tone.error),
           ],
+          if (p.stats.commentCollisions > 0) ...[
+            AppGap.v12,
+            Text(l.commentCollisions(p.stats.commentCollisions)),
+            AppGap.v8,
+            ChoiceSegments<CommentPolicy>(
+              options: [
+                ChoiceOption(CommentPolicy.keepOld, l.keepOld),
+                ChoiceOption(CommentPolicy.replace, l.replace),
+                ChoiceOption(CommentPolicy.merge, l.merge),
+              ],
+              selected: _opts.commentPolicy,
+              onChanged: (v) => setState(() => _opts = _opts.copyWith(commentPolicy: v)),
+            ),
+          ],
+          if (p.conflicts.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.md),
+              child: Text(l.conflictsWillBeShown, style: context.tt.meta),
+            ),
         ],
-      ),
+      ],
     );
   }
 
@@ -582,7 +575,12 @@ class _ImportWizardScreenState extends ConsumerState<ImportWizardScreen> {
         ),
         Expanded(
           child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.page, AppSpacing.md, AppSpacing.page, AppSpacing.listBottom),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.page,
+              AppSpacing.md,
+              AppSpacing.page,
+              AppSpacing.listBottom,
+            ).inPage(context),
             itemCount: _conflicts.length,
             separatorBuilder: (_, _) => AppGap.v12,
             itemBuilder: (context, i) {

@@ -10,14 +10,10 @@ import '../accounts/accounts_providers.dart';
 import '../app/providers.dart';
 import '../theme/app_icons.dart';
 import '../theme/tokens.dart';
+import 'ui/sheets.dart';
 
-Future<bool?> showEngineModelSheet(BuildContext context) => showModalBottomSheet<bool>(
-  context: context,
-  useRootNavigator: true,
-  showDragHandle: true,
-  isScrollControlled: true,
-  builder: (_) => const EngineModelSheet(),
-);
+Future<bool?> showEngineModelSheet(BuildContext context) =>
+    showAppModal<bool>(context, builder: (_) => const EngineModelSheet());
 
 class EngineModelSheet extends ConsumerStatefulWidget {
   const EngineModelSheet({super.key});

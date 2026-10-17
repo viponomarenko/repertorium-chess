@@ -16,7 +16,7 @@ import '../../data/sync/gap_service.dart';
 import '../app/providers.dart';
 
 /// App version (overridden in main from package info).
-final appVersionProvider = Provider<String>((ref) => '1.0.1');
+final appVersionProvider = Provider<String>((ref) => '1.0.2');
 
 /// Lichess: `Tabiya/<version> (+<repository>)` (ТЗ 6.1).
 final userAgentProvider = Provider<String>(

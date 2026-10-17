@@ -76,7 +76,7 @@ void main() {
       expect(find.text('Хід додано'), findsOneWidget);
       final repo = RepertoireRepository(app.db);
       expect((await tester.runAsync(() => repo.loadGraph(1)))!.moveCount, 4);
-      await tester.tap(find.text('Скасувати дію'));
+      await tester.tap(find.text('Скасувати'));
       await settle(tester);
       expect((await tester.runAsync(() => repo.loadGraph(1)))!.moveCount, 3);
       // "Done" returns to viewing.

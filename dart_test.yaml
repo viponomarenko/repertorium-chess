@@ -3,3 +3,5 @@ tags:
     skip: "Run explicitly: flutter test --tags perf"
   # Pixel comparisons of the typography preview; rendered on macOS.
   golden: {}
+  survey:
+    skip: "Pictures for a look, not checks: see test/e2e/ipad_survey_test.dart"
