@@ -19,6 +19,8 @@ import '../library/collection_screen.dart';
 import '../library/import_flow.dart';
 import '../library/library_screen.dart';
 import '../openings/openings_screen.dart';
+import '../puzzles/puzzle_screen.dart';
+import '../puzzles/puzzles_screen.dart';
 import '../repertoire/import_wizard_screen.dart';
 import '../repertoire/repertoire_list_screen.dart';
 import '../repertoire/repertoire_screen.dart';
@@ -27,10 +29,35 @@ import '../settings/settings_screen.dart';
 import '../stats/stats_screen.dart';
 import '../training/training_args.dart';
 import '../training/training_screen.dart';
+import 'app_page.dart';
 import 'providers.dart';
 import 'route_observer.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// A route whose page is always an [AppPage] (D-101). go_router 18 looks
+/// for the `MaterialApp` of the `material_ui` package; ours is Flutter's,
+/// so it fell back to pages without a transition: screens appeared at
+/// once and the iOS swipe back from the left edge did nothing.
+GoRoute _route({
+  required String path,
+  required Widget Function(BuildContext context, GoRouterState state) builder,
+  GlobalKey<NavigatorState>? parentNavigatorKey,
+  GoRouterRedirect? redirect,
+  List<RouteBase> routes = const [],
+}) => GoRoute(
+  path: path,
+  parentNavigatorKey: parentNavigatorKey,
+  redirect: redirect,
+  routes: routes,
+  pageBuilder: (context, state) => AppPage<void>(
+    key: state.pageKey,
+    name: state.name ?? state.path,
+    arguments: <String, String>{...state.pathParameters, ...state.uri.queryParameters},
+    restorationId: state.pageKey.value,
+    child: builder(context, state),
+  ),
+);
 
 final routerProvider = Provider<GoRouter>((ref) {
   final onboarded = ref.read(settingsProvider).onboardingDone;
@@ -40,20 +67,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: onboarded ? '/today' : '/welcome',
     routes: [
       GoRoute(path: '/', redirect: (_, _) => '/today'),
-      GoRoute(path: '/welcome', builder: (_, _) => const OnboardingScreen()),
+      _route(path: '/welcome', builder: (_, _) => const OnboardingScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell),
         branches: [
           StatefulShellBranch(
-            routes: [GoRoute(path: '/today', builder: (_, _) => const TodayScreen())],
+            routes: [_route(path: '/today', builder: (_, _) => const TodayScreen())],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
+              _route(
                 path: '/repertoires',
                 builder: (_, _) => const RepertoireListScreen(),
                 routes: [
-                  GoRoute(
+                  _route(
                     // Over the main navigation: the screen has its own
                     // bottom bar with the tools of the position (D-078).
                     parentNavigatorKey: rootNavigatorKey,
@@ -73,11 +100,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
+              _route(
                 path: '/library',
                 builder: (_, _) => const LibraryScreen(),
                 routes: [
-                  GoRoute(
+                  _route(
                     path: ':cid',
                     builder: (_, s) => CollectionScreen(id: int.tryParse(s.pathParameters['cid']!) ?? -1),
                   ),
@@ -86,11 +113,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/more', builder: (_, _) => const MoreScreen())],
+            routes: [_route(path: '/more', builder: (_, _) => const MoreScreen())],
           ),
         ],
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/game/:id',
         builder: (_, s) => GameScreen(
@@ -98,7 +125,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           args: s.extra is GameScreenArgs ? s.extra! as GameScreenArgs : const GameScreenArgs(),
         ),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/analysis',
         builder: (_, s) => GameScreen(
@@ -108,7 +135,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               : GameScreenArgs(fen: s.uri.queryParameters['fen']),
         ),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/position-editor',
         builder: (_, s) => PositionEditorScreen(
@@ -116,7 +143,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           pickMode: s.uri.queryParameters['pick'] == '1',
         ),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/build/:id',
         // The repertoire screen itself, in the editing mode, over whatever
@@ -130,64 +157,79 @@ final routerProvider = Provider<GoRouter>((ref) {
           standalone: true,
         ),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/rep-import',
         // Opened without its data (e.g. restored navigation): go home.
         redirect: (_, s) => s.extra is RepImportRequest ? null : '/today',
         builder: (_, s) => ImportWizardScreen(request: s.extra! as RepImportRequest),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/train',
         redirect: (_, s) => s.extra is TrainingArgs ? null : '/today',
         builder: (_, s) => TrainingScreen(args: s.extra! as TrainingArgs),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/import',
         builder: (_, s) =>
             ImportFlowScreen(input: s.extra is ImportInput ? s.extra! as ImportInput : const ImportInput()),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/stats',
         builder: (_, s) => StatsScreen(repertoireId: int.tryParse(s.uri.queryParameters['rep'] ?? '')),
       ),
-      GoRoute(parentNavigatorKey: rootNavigatorKey, path: '/settings', builder: (_, _) => const SettingsScreen()),
-      GoRoute(
+      _route(parentNavigatorKey: rootNavigatorKey, path: '/settings', builder: (_, _) => const SettingsScreen()),
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/backup',
         builder: (_, s) =>
             BackupScreen(request: s.extra is BackupRestoreRequest ? s.extra! as BackupRestoreRequest : null),
       ),
-      GoRoute(parentNavigatorKey: rootNavigatorKey, path: '/accounts', builder: (_, _) => const AccountsScreen()),
-      GoRoute(
+      _route(parentNavigatorKey: rootNavigatorKey, path: '/accounts', builder: (_, _) => const AccountsScreen()),
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/lichess-studies',
         builder: (_, _) => const LichessStudiesScreen(),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/my-games',
-        builder: (_, s) => MyGamesHubScreen(initialTab: int.tryParse(s.uri.queryParameters['tab'] ?? '') ?? 0),
+        builder: (_, s) => MyGamesHubScreen(
+          initialTab: int.tryParse(s.uri.queryParameters['tab'] ?? '') ?? 0,
+          downloadOnOpen: s.uri.queryParameters['download'],
+        ),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/gaps',
         builder: (_, _) => const MyGamesHubScreen(initialTab: 2),
       ),
-      GoRoute(
+      _route(
         parentNavigatorKey: rootNavigatorKey,
         path: '/my-openings',
         builder: (_, _) => const MyGamesHubScreen(initialTab: 1),
       ),
-      GoRoute(parentNavigatorKey: rootNavigatorKey, path: '/openings', builder: (_, _) => const OpeningsScreen()),
-      GoRoute(parentNavigatorKey: rootNavigatorKey, path: '/about', builder: (_, _) => const AboutScreen()),
+      _route(parentNavigatorKey: rootNavigatorKey, path: '/openings', builder: (_, _) => const OpeningsScreen()),
+      _route(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/puzzles',
+        builder: (_, _) => const PuzzlesScreen(),
+        routes: [
+          _route(
+            parentNavigatorKey: rootNavigatorKey,
+            path: ':angle',
+            builder: (_, s) => PuzzleScreen(angle: s.pathParameters['angle']!),
+          ),
+        ],
+      ),
+      _route(parentNavigatorKey: rootNavigatorKey, path: '/about', builder: (_, _) => const AboutScreen()),
       if (kDebugMode)
-        GoRoute(parentNavigatorKey: rootNavigatorKey, path: '/design', builder: (_, _) => const DesignPreviewScreen()),
+        _route(parentNavigatorKey: rootNavigatorKey, path: '/design', builder: (_, _) => const DesignPreviewScreen()),
       if (kDebugMode)
-        GoRoute(
+        _route(
           parentNavigatorKey: rootNavigatorKey,
           path: '/typography',
           builder: (_, _) => const TypographyPreviewScreen(),

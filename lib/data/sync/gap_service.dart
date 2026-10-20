@@ -35,7 +35,17 @@ class GapService {
   /// repertoire of its colour only: the one it follows the longest (D-057).
   /// With a 1.e4 and a 1.d4 repertoire, a 1.e4 game is not a deviation
   /// from the 1.d4 one.
-  Future<GapSummary> analyzeAll() async {
+  ///
+  /// Runs after every download and when the report opens on games not
+  /// compared yet: a call during a run shares that run.
+  Future<GapSummary> analyzeAll() => _run ??= _analyzeAll().whenComplete(() => _run = null);
+
+  Future<GapSummary>? _run;
+
+  /// Whether a comparison is running now.
+  bool get running => _run != null;
+
+  Future<GapSummary> _analyzeAll() async {
     final reps = await db.select(db.repertoires).get();
     final games = await db.select(db.importedGames).get();
     var total = 0;
@@ -150,6 +160,18 @@ class GapService {
       ],
     );
   }
+
+  /// Where each compared game left a repertoire (hidden ones included: the
+  /// game still left it there): game id -> (ply, the move played).
+  Stream<Map<int, (int, String)>> watchGameExits() => db
+      .select(db.gapEvents)
+      .watch()
+      .map(
+        (rows) => {
+          for (final e in rows)
+            if (e.type != 'endOfBook') e.importedGameId: (e.ply, e.playedSan),
+        },
+      );
 
   Future<void> dismiss(Iterable<int> ids, {bool dismissed = true}) =>
       (db.update(db.gapEvents)..where((e) => e.id.isIn(ids))).write(GapEventsCompanion(dismissed: Value(dismissed)));

@@ -8,19 +8,45 @@ import '../lichess/lichess_auth.dart';
 import '../lichess/lichess_client.dart';
 
 class SyncProgress {
-  const SyncProgress({required this.downloaded, required this.added, this.message, this.done = false, this.error});
+  const SyncProgress({
+    required this.downloaded,
+    required this.added,
+    this.month,
+    this.done = false,
+    this.error,
+    this.more = false,
+  });
+
+  /// Games looked at (already downloaded ones included).
   final int downloaded;
+
+  /// Games new to the app.
   final int added;
-  final String? message;
+
+  /// The Chess.com month being read.
+  final DateTime? month;
   final bool done;
   final Object? error;
+
+  /// The limit was reached: there are games left to download.
+  final bool more;
 }
 
 /// Filters for downloading the user's games (F-LI-08, F-CC-02).
 class GamesFilter {
-  const GamesFilter({this.since, this.max, this.speeds = const {}, this.ratedOnly = false, this.color});
+  const GamesFilter({
+    this.since,
+    this.max,
+    this.speeds = const {},
+    this.ratedOnly = false,
+    this.color,
+    this.newOnly = false,
+  });
 
   final DateTime? since;
+
+  /// At most this many games new to the app: games downloaded before do
+  /// not count, so a second download continues where the first stopped.
   final int? max;
 
   /// bullet | blitz | rapid | classical | correspondence(daily)
@@ -29,6 +55,10 @@ class GamesFilter {
 
   /// white | black
   final String? color;
+
+  /// Only games played after the latest downloaded one (the whole history
+  /// when nothing is downloaded yet).
+  final bool newOnly;
 }
 
 class AccountsService {
@@ -128,12 +158,15 @@ class AccountsService {
 
   // ------------------------------------------------------------ games
 
-  Future<DateTime?> _latestGame(String provider) async {
-    final max = db.importedGames.playedAt.max();
+  Future<DateTime?> _latestGame(String provider) => _playedAt(provider, db.importedGames.playedAt.max());
+
+  Future<DateTime?> _oldestGame(String provider) => _playedAt(provider, db.importedGames.playedAt.min());
+
+  Future<DateTime?> _playedAt(String provider, Expression<DateTime> aggregate) async {
     final q = db.selectOnly(db.importedGames)
-      ..addColumns([max])
+      ..addColumns([aggregate])
       ..where(db.importedGames.provider.equals(provider));
-    return (await q.getSingle()).read(max);
+    return (await q.getSingle()).read(aggregate);
   }
 
   Future<bool> _insertGame(ImportedGamesCompanion c) async {
@@ -141,94 +174,146 @@ class AccountsService {
     return row != null;
   }
 
-  /// Downloads Lichess games; incremental by default (F-LI-08).
+  /// Downloads Lichess games (F-LI-08). Only what is not here yet is
+  /// asked for: games newer than the latest downloaded one, oldest first so
+  /// that a limit leaves no hole, then (unless [GamesFilter.newOnly]) games
+  /// older than the earliest one.
   Stream<SyncProgress> syncLichess(GamesFilter f, {bool Function()? cancelled}) async* {
     final acc = await account('lichess');
     if (acc == null) return;
-    final since = f.since ?? (await _latestGame('lichess'))?.add(const Duration(milliseconds: 1));
+    final latest = await _latestGame('lichess');
+    final oldest = await _oldestGame('lichess');
+    const ms = Duration(milliseconds: 1);
+    final windows = <({DateTime? since, DateTime? until, bool oldestFirst})>[
+      if (latest == null || oldest == null)
+        (since: f.since, until: null, oldestFirst: false)
+      else ...[
+        (since: f.since != null && f.since!.isAfter(latest) ? f.since : latest.add(ms), until: null, oldestFirst: true),
+        if (!f.newOnly && (f.since == null || oldest.isAfter(f.since!)))
+          (since: f.since, until: oldest.subtract(ms), oldestFirst: false),
+      ],
+    ];
     var downloaded = 0;
     var added = 0;
+    var more = false;
     final perf = f.speeds.map((s) => s == 'daily' ? 'correspondence' : s).toList();
     try {
-      await for (final g in lichess.userGames(
-        acc.username,
-        since: since,
-        max: f.max,
-        perfTypes: perf.isEmpty ? null : perf,
-        rated: f.ratedOnly ? true : null,
-        color: f.color,
-      )) {
+      for (final w in windows) {
         if (cancelled?.call() ?? false) break;
-        downloaded++;
-        if (isVariantPgn(g.pgn)) continue;
-        final userColor = g.white == acc.username.toLowerCase() ? 'white' : 'black';
-        if (await _insertGame(
-          ImportedGamesCompanion.insert(
-            provider: 'lichess',
-            externalId: g.id,
-            pgn: g.pgn,
-            playedAt: g.createdAt,
-            userColor: userColor,
-            timeControl: Value(g.timeControl),
-            speed: Value(g.speed),
-            result: Value(g.result),
-            opponent: Value(userColor == 'white' ? g.black : g.white),
-            url: Value('https://lichess.org/${g.id}'),
-            rated: Value(g.rated),
-          ),
-        )) {
-          added++;
+        final left = f.max == null ? null : f.max! - added;
+        if (left != null && left <= 0) {
+          more = true;
+          break;
         }
-        if (downloaded % 10 == 0) yield SyncProgress(downloaded: downloaded, added: added);
+        var seen = 0;
+        await for (final g in lichess.userGames(
+          acc.username,
+          since: w.since,
+          until: w.until,
+          max: left,
+          perfTypes: perf.isEmpty ? null : perf,
+          rated: f.ratedOnly ? true : null,
+          color: f.color,
+          oldestFirst: w.oldestFirst,
+        )) {
+          if (cancelled?.call() ?? false) break;
+          downloaded++;
+          seen++;
+          if (isVariantPgn(g.pgn)) continue;
+          final userColor = g.white == acc.username.toLowerCase() ? 'white' : 'black';
+          if (await _insertGame(
+            ImportedGamesCompanion.insert(
+              provider: 'lichess',
+              externalId: g.id,
+              pgn: g.pgn,
+              playedAt: g.createdAt,
+              userColor: userColor,
+              timeControl: Value(g.timeControl),
+              speed: Value(g.speed),
+              result: Value(g.result),
+              opponent: Value(userColor == 'white' ? g.black : g.white),
+              url: Value('https://lichess.org/${g.id}'),
+              rated: Value(g.rated),
+            ),
+          )) {
+            added++;
+          }
+          if (downloaded % 10 == 0) yield SyncProgress(downloaded: downloaded, added: added);
+        }
+        // The server stopped at the limit: there may be more.
+        if (left != null && seen >= left) more = true;
       }
       await _touchSync('lichess');
-      yield SyncProgress(downloaded: downloaded, added: added, done: true);
+      yield SyncProgress(downloaded: downloaded, added: added, done: true, more: more);
     } catch (e) {
       yield SyncProgress(downloaded: downloaded, added: added, done: true, error: e);
     }
   }
 
-  /// Downloads Chess.com games month by month; only new and current months
-  /// are fetched again, with ETag (F-CC-02, F-CC-03).
+  /// Year and month of a Chess.com archive URL (`.../games/2026/10`).
+  static DateTime? archiveMonth(Uri url) {
+    final parts = url.pathSegments;
+    if (parts.length < 2) return null;
+    final y = int.tryParse(parts[parts.length - 2]);
+    final m = int.tryParse(parts.last);
+    return y == null || m == null ? null : DateTime(y, m);
+  }
+
+  /// Downloads Chess.com games month by month (F-CC-02, F-CC-03). A month
+  /// read through without skipping a game is remembered by its ETag and
+  /// later costs one 304 answer. Games already here do not count towards
+  /// the limit, so the next download goes on where this one stopped:
+  /// newest first for a period or the whole history, oldest first for new
+  /// games only.
   Stream<SyncProgress> syncChessCom(GamesFilter f, {bool Function()? cancelled}) async* {
     final acc = await account('chesscom');
     if (acc == null) return;
     var downloaded = 0;
     var added = 0;
+    var more = false;
     try {
       final archives = await chessCom.archives(acc.username);
-      final latest = await _latestGame('chesscom');
-      final from = f.since ?? latest;
-      final months = archives.where((u) {
-        if (from == null) return true;
-        final parts = u.pathSegments;
-        final y = int.tryParse(parts[parts.length - 2]) ?? 0;
-        final m = int.tryParse(parts.last) ?? 0;
-        return y > from.year || (y == from.year && m >= from.month);
-      }).toList();
-      // Newest first, so a limit keeps recent games.
-      for (final url in months.reversed) {
+      final latest = f.newOnly ? await _latestGame('chesscom') : null;
+      final newOnly = latest != null;
+      final from = newOnly ? latest : f.since;
+      final months = [
+        for (final u in archives)
+          if (archiveMonth(u) case final m?)
+            if (from == null || !m.isBefore(DateTime(from.year, from.month))) (u, m),
+      ];
+      final me = acc.username.toLowerCase();
+      final ordered = (newOnly ? months : months.reversed).toList();
+      for (final (k, (url, month)) in ordered.indexed) {
         if (cancelled?.call() ?? false) break;
-        if (f.max != null && downloaded >= f.max!) break;
+        if (f.max != null && added >= f.max!) {
+          // More to come only if a month left is not read through yet.
+          more = await _anyUnread([for (final (u, _) in ordered.skip(k)) u]);
+          break;
+        }
         final cache = await (db.select(db.httpCache)..where((c) => c.url.equals(url.toString()))).getSingleOrNull();
         final r = await chessCom.month(url, etag: cache?.etag, lastModified: cache?.lastModified);
         if (r.notModified) {
-          yield SyncProgress(downloaded: downloaded, added: added, message: url.pathSegments.skip(5).join('/'));
+          yield SyncProgress(downloaded: downloaded, added: added, month: month);
           continue;
         }
-        final me = acc.username.toLowerCase();
-        // The month may be cached (ETag) only when every game of it was
-        // looked at without filters; otherwise a later sync with other
-        // settings would get 304 and never see the skipped games.
-        final unfiltered = f.color == null && !f.ratedOnly && f.speeds.isEmpty && f.since == null;
+        // A month's games come oldest first.
+        final games = newOnly ? r.games : r.games.reversed.toList();
         var complete = true;
-        for (final g in r.games.reversed) {
+        for (final (i, g) in games.indexed) {
+          if (cancelled?.call() ?? false) {
+            complete = false;
+            break;
+          }
+          // Variants are never downloaded: skipping them leaves the month whole.
           if (g.rules != 'chess') continue;
           final color = g.white.toLowerCase() == me ? 'white' : 'black';
-          if (f.color != null && f.color != color) continue;
-          if (f.ratedOnly && !g.rated) continue;
-          if (f.speeds.isNotEmpty && !f.speeds.contains(g.timeClass == 'daily' ? 'daily' : g.timeClass)) continue;
-          if (f.since != null && g.endTime.isBefore(f.since!)) continue;
+          if ((f.color != null && f.color != color) ||
+              (f.ratedOnly && !g.rated) ||
+              (f.speeds.isNotEmpty && !f.speeds.contains(g.timeClass)) ||
+              (!newOnly && f.since != null && g.endTime.isBefore(f.since!))) {
+            complete = false;
+            continue;
+          }
           downloaded++;
           if (await _insertGame(
             ImportedGamesCompanion.insert(
@@ -247,12 +332,13 @@ class AccountsService {
           )) {
             added++;
           }
-          if (f.max != null && downloaded >= f.max!) {
-            complete = g == r.games.first;
+          if (f.max != null && added >= f.max! && i < games.length - 1) {
+            complete = false;
+            more = true;
             break;
           }
         }
-        if (unfiltered && complete) {
+        if (complete) {
           await db
               .into(db.httpCache)
               .insertOnConflictUpdate(
@@ -264,13 +350,22 @@ class AccountsService {
                 ),
               );
         }
-        yield SyncProgress(downloaded: downloaded, added: added, message: url.pathSegments.skip(5).join('/'));
+        yield SyncProgress(downloaded: downloaded, added: added, month: month);
       }
       await _touchSync('chesscom');
-      yield SyncProgress(downloaded: downloaded, added: added, done: true);
+      yield SyncProgress(downloaded: downloaded, added: added, done: true, more: more);
     } catch (e) {
       yield SyncProgress(downloaded: downloaded, added: added, done: true, error: e);
     }
+  }
+
+  /// Whether any of [months] was never read through (no remembered ETag).
+  Future<bool> _anyUnread(List<Uri> months) async {
+    final known = {
+      for (final c in await (db.select(db.httpCache)..where((c) => c.url.isIn([for (final u in months) '$u']))).get())
+        c.url,
+    };
+    return months.any((u) => !known.contains('$u'));
   }
 
   Future<void> _touchSync(String provider) => (db.update(

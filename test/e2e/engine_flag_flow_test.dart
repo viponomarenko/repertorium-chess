@@ -55,7 +55,7 @@ void main() {
     final app = await pumpApp(tester, seed: seedFlagged);
     await goTo(tester, '/repertoires/1');
     await tapText(tester, 'Зробити основним d4');
-    expect(find.text('d4 тепер основний; e4 – альтернатива'), findsOneWidget);
+    expect(find.text('d4 тепер основний; e4 - альтернатива'), findsOneWidget);
     expect(find.text('Зробити основним d4'), findsNothing);
     var g = await graphOf(tester, app);
     expect(g.mainMove(g.rootKey)!.san, 'd4');

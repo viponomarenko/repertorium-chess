@@ -35,13 +35,19 @@ class _OpeningsScreenState extends ConsumerState<OpeningsScreen> {
     final l = context.l10n;
     final book = ref.watch(openingBookProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(l.openingsTitle)),
+      appBar: PageBar(bar: AppBar(title: Text(l.openingsTitle))),
       body: book.when(
         loading: () => const LoadingView(),
         error: (e, _) =>
             ErrorState(message: l.somethingWentWrong, details: e, onRetry: () => ref.invalidate(openingBookProvider)),
         data: (b) {
-          final results = b.search(_q, limit: 300);
+          final searching = _q.trim().isNotEmpty;
+          final results = searching ? b.search(_q, limit: 300) : const <OpeningInfo>[];
+          final families = searching ? const <String, List<OpeningFamily>>{} : b.familiesByLetter();
+          final popular = searching ? const <OpeningInfo>[] : popularOpenings(b);
+          final groups = {'A': l.ecoGroupA, 'B': l.ecoGroupB, 'C': l.ecoGroupC, 'D': l.ecoGroupD, 'E': l.ecoGroupE};
+          Widget tile(OpeningInfo o) => OpeningTile(opening: o, onTap: () => _open(o));
+          final pad = EdgeInsets.zero.inPage(context);
           return Column(
             children: [
               Padding(
@@ -55,13 +61,43 @@ class _OpeningsScreenState extends ConsumerState<OpeningsScreen> {
                 ),
               ),
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
-                  itemCount: results.length,
-                  itemBuilder: (context, i) {
-                    final o = results[i];
-                    return OpeningTile(opening: o, onTap: () => _open(o));
-                  },
+                // Searching: the matches in one list. Otherwise the
+                // openings people play most, then the catalog by ECO
+                // letter, each family folded into one row (D-119).
+                child: CustomScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  slivers: [
+                    if (searching)
+                      SliverPadding(
+                        padding: pad,
+                        sliver: SliverList.builder(itemCount: results.length, itemBuilder: (_, i) => tile(results[i])),
+                      )
+                    else ...[
+                      SliverPadding(
+                        padding: pad,
+                        sliver: SliverToBoxAdapter(child: SectionHeader(l.popularOpenings)),
+                      ),
+                      SliverPadding(
+                        padding: pad,
+                        sliver: SliverList.builder(itemCount: popular.length, itemBuilder: (_, i) => tile(popular[i])),
+                      ),
+                      for (final MapEntry(key: letter, value: name) in groups.entries)
+                        if (families[letter] case final list?) ...[
+                          SliverPadding(
+                            padding: pad,
+                            sliver: SliverToBoxAdapter(child: SectionHeader('$letter · $name')),
+                          ),
+                          SliverPadding(
+                            padding: pad,
+                            sliver: SliverList.builder(
+                              itemCount: list.length,
+                              itemBuilder: (_, i) => _FamilyTile(family: list[i], tile: tile),
+                            ),
+                          ),
+                        ],
+                    ],
+                    const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.listBottom)),
+                  ],
                 ),
               ),
             ],
@@ -125,6 +161,27 @@ class _OpeningsScreenState extends ConsumerState<OpeningsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A family of the catalog folded into one row: its name, codes and the
+/// number of lines; open, its lines (D-119).
+class _FamilyTile extends StatelessWidget {
+  const _FamilyTile({required this.family, required this.tile});
+  final OpeningFamily family;
+  final Widget Function(OpeningInfo) tile;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    // A family of one line needs no folding.
+    if (family.lines.length == 1) return tile(family.lines.single);
+    return AppExpansionTile(
+      leading: AppAvatar(text: family.firstEco),
+      title: Text(family.name),
+      subtitle: Text('${family.ecoRange} · ${l.openingVariations(family.lines.length)}', style: context.tt.meta),
+      children: [for (final o in family.lines) tile(o)],
     );
   }
 }

@@ -51,3 +51,7 @@ app.*.map.json
 /lib/l10n/gen/
 # Tool downloads
 /tool/openings/*.tsv
+
+# Wikibooks raw download (D-106); the manifest and translations are committed.
+tool/wikibooks/raw/
+tool/wikibooks/work/

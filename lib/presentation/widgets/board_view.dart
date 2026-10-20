@@ -9,6 +9,7 @@ import '../../data/settings/app_settings.dart';
 import '../../domain/pgn/pgn_model.dart';
 import '../app/providers.dart';
 import '../theme/app_theme.dart';
+import 'ui/back_swipe.dart';
 
 /// Board themes and piece sets offered to the user. Only solid-color boards
 /// and piece sets with GPL-compatible licenses (see NOTICE, 9.4).
@@ -48,7 +49,7 @@ class BoardAppearance {
     'purple' => _solid(BoardColors.purpleBoard.$1, BoardColors.purpleBoard.$2),
     'tabiya' => _solid(BoardColors.stoneBoard.$1, BoardColors.stoneBoard.$2),
     _ => ChessboardColorScheme.brown,
-  };
+  }.copyWith(lastMove: const HighlightDetails(solidColor: BoardColors.lastMove));
 
   static PieceSet pieceSet(String name) => pieceSets.firstWhere((p) => p.name == name, orElse: () => PieceSet.cburnett);
 
@@ -187,15 +188,19 @@ class _BoardViewState extends ConsumerState<BoardView> {
             dimension: size,
             child: MediaQuery.withClampedTextScaling(
               maxScaleFactor: kBoardTextScaleMax,
-              child: Chessboard(
-                size: size,
-                controller: _controller,
-                orientation: widget.orientation,
-                settings: BoardAppearance.settings(settings),
-                shapes: widget.shapes,
-                annotations: widget.annotations,
-                onTouchedSquare: widget.onTouchedSquare,
-                onMove: widget.onMove == null ? null : (move, {viaDragAndDrop}) => widget.onMove!(move),
+              // A piece dragged from the edge file must not take the
+              // screen back with it (D-101).
+              child: BackSwipeGuard(
+                child: Chessboard(
+                  size: size,
+                  controller: _controller,
+                  orientation: widget.orientation,
+                  settings: BoardAppearance.settings(settings),
+                  shapes: widget.shapes,
+                  annotations: widget.annotations,
+                  onTouchedSquare: widget.onTouchedSquare,
+                  onMove: widget.onMove == null ? null : (move, {viaDragAndDrop}) => widget.onMove!(move),
+                ),
               ),
             ),
           ),

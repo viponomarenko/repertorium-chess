@@ -77,7 +77,8 @@ void main() {
       try {
         await goTo(tester, '/openings');
         await readyOpenings(tester);
-        final label = find.text('A00').first;
+        // The popular openings come first (D-119): the Sicilian's code.
+        final label = find.text('B20').first;
         final paragraph = tester.renderObject<RenderParagraph>(label);
         final cs = Theme.of(tester.element(label)).colorScheme;
         final avatar = tester.widget<Container>(

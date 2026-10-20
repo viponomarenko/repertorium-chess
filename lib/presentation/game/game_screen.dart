@@ -8,19 +8,26 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/l10n.dart';
 import '../../core/sound_service.dart';
+import '../../data/engine/engine_service.dart';
 import '../../data/import/pgn_import_service.dart';
 import '../../data/repositories/library_repository.dart';
 import '../../domain/chess/chess_utils.dart';
 import '../../domain/pgn/pgn_model.dart';
 import '../../domain/pgn/pgn_writer.dart';
+import '../accounts/game_meta.dart';
+import '../accounts/imported_game_args.dart';
 import '../app/providers.dart';
+import '../position_info/position_info_sheet.dart';
 import '../repertoire/import_wizard_screen.dart';
 import '../theme/app_icons.dart';
 import '../widgets/board_layout.dart';
 import '../widgets/board_view.dart';
+import '../widgets/comment_editor.dart';
+import '../widgets/comment_text.dart';
 import '../widgets/common.dart';
 import '../widgets/engine_panel.dart';
 import '../widgets/explorer_panel.dart';
@@ -40,6 +47,12 @@ class GameScreenArgs {
     this.initialPath,
     this.orientation,
     this.lineFor,
+    this.title,
+    this.subtitle,
+    this.sourceUrl,
+    this.sourceName,
+    this.importedId,
+    this.importedOrder = const [],
   });
 
   /// For a new game: where to save it.
@@ -57,6 +70,18 @@ class GameScreenArgs {
 
   /// Board orientation (else from the game's `Orientation` header).
   final Side? orientation;
+
+  /// A downloaded game (D-099): the title instead of "White - Black" (the
+  /// opponent and the rating), a line of facts under it (the result, where
+  /// the game left the repertoire), the game on its site ([sourceName]),
+  /// and the downloaded games around it ([importedOrder], ids in the
+  /// list's order) for "Previous / Next game".
+  final String? title;
+  final String? subtitle;
+  final String? sourceUrl;
+  final String? sourceName;
+  final int? importedId;
+  final List<int> importedOrder;
 
   /// Opened from a repertoire (its name): a pinned bar adds the analysed
   /// line to it, and the screen pops with the line as standard UCI moves
@@ -142,6 +167,12 @@ class _GameViewState extends ConsumerState<_GameView> {
   /// The first move of the engine's second line, while two or more show.
   String? _secondMove;
   final _enginePanelKey = GlobalKey();
+
+  /// The engine panel's latest evaluation, for "About this position".
+  EngineEval? _liveEval;
+
+  /// "About this position" is open: it uses the engine, the panel waits.
+  bool _infoOpen = false;
   Square? _drawStart;
   Square? _drawHover;
   bool _swipeAllowed = false;
@@ -292,11 +323,17 @@ class _GameViewState extends ConsumerState<_GameView> {
     final initial = before
         ? n.startCommentText
         : (n.isRoot ? _c.game.root.comments.map((c) => c.text).join(' ') : n.commentText);
-    final text = await promptText(
+    // The position the comment is about: before the move or after it.
+    final fen = before ? (n.parent?.fen ?? n.fen) : n.fen;
+    final san = n.san;
+    final move = n.isRoot || n.parent == null || san == null ? null : numberedSan(n.parent!.fen, san);
+    final text = await showCommentEditor(
       context,
       title: before ? l.commentBefore : (n.isRoot ? l.gameComment : l.commentAfter),
       initial: initial,
-      maxLines: 6,
+      fen: fen,
+      orientation: _orientation,
+      subtitle: move == null ? null : l.commentAfterMove(move),
     );
     if (text != null) _c.setComment(n, text, before: before);
   }
@@ -568,6 +605,12 @@ class _GameViewState extends ConsumerState<_GameView> {
         await _openSibling(-1);
       case 'nextGame':
         await _openSibling(1);
+      case 'prevImported':
+        await _openImported(-1);
+      case 'nextImported':
+        await _openImported(1);
+      case 'source':
+        await launchUrl(Uri.parse(widget.args.sourceUrl!), mode: LaunchMode.externalApplication);
       case 'headers':
         final h = await showHeadersEditor(context, _c.game.headers);
         if (h != null) _c.setHeaders(h);
@@ -605,6 +648,31 @@ class _GameViewState extends ConsumerState<_GameView> {
     context.pushReplacement('/game/${sib[j]}', extra: widget.args);
   }
 
+  /// The downloaded game before or after this one in its list. Moves
+  /// played on the board are asked about first, as on leaving.
+  Future<void> _openImported(int delta) async {
+    final order = widget.args.importedOrder;
+    final j = order.indexOf(widget.args.importedId ?? -1) + delta;
+    if (j < 0 || j >= order.length) return;
+    if (_c.canUndo) {
+      final choice = await _confirmLeaveAnalysis();
+      if (choice != 'discard' && !(choice == 'save' && await _saveToLibrary())) return;
+    }
+    final db = ref.read(databaseProvider);
+    final row = await (db.select(db.importedGames)..where((g) => g.id.equals(order[j]))).getSingleOrNull();
+    if (row == null || !mounted) return;
+    context.pushReplacement(
+      '/analysis',
+      extra: importedGameArgs(
+        context,
+        row,
+        meta: ref.read(gameMetaProvider).value?[row.id],
+        exit: ref.read(gameExitsProvider).value?[row.id],
+        order: order,
+      ),
+    );
+  }
+
   // ------------------------------------------------------------ build
 
   @override
@@ -612,9 +680,12 @@ class _GameViewState extends ConsumerState<_GameView> {
     final l = context.l10n;
     final sib = widget.args.siblings;
     final sibIndex = sib.indexOf(_gameId ?? -1);
+    final imported = widget.args.importedOrder;
+    final importedIndex = imported.indexOf(widget.args.importedId ?? -1);
+    final subtitle = _gameId == null ? widget.args.subtitle : null;
     final unsavedAnalysis = _gameId == null && _c.canUndo;
 
-    final toolbarHeight = _gameId == null
+    final toolbarHeight = _gameId == null && subtitle == null
         ? kToolbarHeight
         : kToolbarHeight * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
     final bars = _forLine
@@ -692,10 +763,13 @@ class _GameViewState extends ConsumerState<_GameView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      _gameId == null && _title(context) == l.analysisBoard ? l.analysisShort : _title(context),
+                      widget.args.title ??
+                          (_gameId == null && _title(context) == l.analysisBoard ? l.analysisShort : _title(context)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (subtitle != null)
+                      MovesText(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.tt.meta),
                     if (_gameId != null)
                       Semantics(
                         liveRegion: true,
@@ -732,13 +806,19 @@ class _GameViewState extends ConsumerState<_GameView> {
                     ),
                   if (unsavedAnalysis && !_forLine)
                     IconButton(tooltip: l.saveToLibrary, onPressed: _saveToLibrary, icon: const Icon(AppIcons.save)),
-                  PopupMenuButton<String>(
-                    constraints: appMenuConstraints,
+                  AppMenuButton<String>(
                     icon: const Icon(AppIcons.more),
                     tooltip: l.more,
+                    // What the menu is about (D-114).
+                    title: _title(context),
                     onSelected: _menu,
                     itemBuilder: (_) => [
+                      // The most used actions as tiles at the top.
+                      appMenuTile(value: 'export', icon: AppIcons.share, label: l.exportPgn),
+                      appMenuTile(value: 'fen', icon: AppIcons.copy, label: l.copyFen),
+                      appMenuTile(value: 'editor', icon: AppIcons.editPosition, label: l.editPosition),
                       if (sib.length > 1) ...[
+                        appMenuDivider(),
                         appMenuItem(
                           value: 'prevGame',
                           icon: AppIcons.previousGame,
@@ -751,14 +831,35 @@ class _GameViewState extends ConsumerState<_GameView> {
                           label: l.nextGame,
                           enabled: sibIndex >= 0 && sibIndex < sib.length - 1,
                         ),
-                        appMenuDivider(),
                       ],
-                      if (_gameId == null) appMenuItem(value: 'save', icon: AppIcons.save, label: l.saveToLibrary),
+                      if (imported.length > 1) ...[
+                        appMenuDivider(),
+                        appMenuItem(
+                          value: 'prevImported',
+                          icon: AppIcons.previousGame,
+                          label: l.previousGame,
+                          enabled: importedIndex > 0,
+                        ),
+                        appMenuItem(
+                          value: 'nextImported',
+                          icon: AppIcons.nextGame,
+                          label: l.nextGame,
+                          enabled: importedIndex >= 0 && importedIndex < imported.length - 1,
+                        ),
+                      ],
+                      appMenuDivider(),
+                      if (widget.args.sourceUrl != null)
+                        appMenuItem(
+                          value: 'source',
+                          icon: AppIcons.link,
+                          label: l.openOn(widget.args.sourceName ?? ''),
+                        ),
+                      // Not twice: the bar has its own button while the
+                      // analysis is unsaved.
+                      if (_gameId == null && !(unsavedAnalysis && !_forLine))
+                        appMenuItem(value: 'save', icon: AppIcons.saveToLibrary, label: l.saveToLibrary),
                       appMenuItem(value: 'headers', icon: AppIcons.info, label: l.gameInfo),
                       appMenuItem(value: 'comment', icon: AppIcons.gameComment, label: l.gameComment),
-                      appMenuItem(value: 'export', icon: AppIcons.share, label: l.exportPgn),
-                      appMenuItem(value: 'fen', icon: AppIcons.copy, label: l.copyFen),
-                      appMenuItem(value: 'editor', icon: AppIcons.editPosition, label: l.editPosition),
                       if (_gameId != null) ...[
                         appMenuDivider(),
                         appMenuItem(value: 'delete', icon: AppIcons.delete, label: l.deleteGame, destructive: true),
@@ -946,7 +1047,13 @@ class _GameViewState extends ConsumerState<_GameView> {
             child: board,
           );
         }
-        return SizedBox.square(dimension: boardSize, child: board);
+        // The arrow pen and the swipe between moves lie over the board:
+        // a stroke from the edge file draws or steps, it never leaves the
+        // screen (D-101).
+        return SizedBox.square(
+          dimension: boardSize,
+          child: BackSwipeGuard(child: board),
+        );
       },
     );
   }
@@ -985,6 +1092,57 @@ class _GameViewState extends ConsumerState<_GameView> {
       _bestMove = null;
     }
   });
+
+  /// A new analysis board with no move yet: the room under it says what
+  /// to do instead of standing empty (D-121).
+  /// The least room the blank-board hint needs: a line and a button.
+  static const double _blankHintMin = 120;
+
+  bool get _blankBoard =>
+      _gameId == null && widget.args.pgn == null && widget.args.fen == null && _c.game.root.children.isEmpty;
+
+  Widget _blankHint(BuildContext context) {
+    final l = context.l10n;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.page),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l.analysisEmptyHint, textAlign: TextAlign.center, style: context.tt.meta),
+            AppGap.v12,
+            OutlinedButton.icon(onPressed: _pasteGame, icon: const Icon(AppIcons.paste), label: Text(l.pasteGame)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A PGN or a FEN typed or pasted into a field (the field, not a read of
+  /// the clipboard: iOS would ask for permission first) opens in place of
+  /// the blank board.
+  Future<void> _pasteGame() async {
+    final l = context.l10n;
+    final text = await promptText(
+      context,
+      title: l.pastePgnOrFen,
+      hint: '1. e4 e5 2. Nf3 … / FEN',
+      maxLines: 6,
+      confirmLabel: l.aboutAnalyze,
+      mono: true,
+    );
+    final t = text?.trim() ?? '';
+    if (t.isEmpty || !mounted) return;
+    var isFen = false;
+    try {
+      Chess.fromSetup(Setup.parseFen(t));
+      isFen = true;
+    } catch (_) {}
+    context.pushReplacement(
+      '/analysis',
+      extra: isFen ? GameScreenArgs(fen: t) : GameScreenArgs(pgn: t),
+    );
+  }
 
   Widget _side(BuildContext context) {
     final l = context.l10n;
@@ -1073,6 +1231,8 @@ class _GameViewState extends ConsumerState<_GameView> {
                     fen: _c.position.fen,
                     compact: !_wide,
                     maxHeight: panelMax,
+                    paused: _infoOpen,
+                    onEval: (e) => _liveEval = e,
                     onAddLine: (moves) => _c.addLine(_c.current, moves),
                     onBestMove: (m) {
                       if (m != _bestMove && mounted) setState(() => _bestMove = m);
@@ -1145,7 +1305,26 @@ class _GameViewState extends ConsumerState<_GameView> {
               // The whole width: a short game starts at the left edge, not
               // in the middle of a wide panel.
               Expanded(
-                child: SizedBox(width: double.infinity, child: notation),
+                child: SizedBox(
+                  width: double.infinity,
+                  // On a blank board the hint stands over the (empty)
+                  // notation; not beside an open engine or explorer, nor
+                  // where there is no room for it.
+                  child: _blankBoard && !_engine && !_explorer
+                      ? Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            notation,
+                            Positioned.fill(
+                              child: LayoutBuilder(
+                                builder: (context, b) =>
+                                    b.maxHeight < _blankHintMin ? const SizedBox.shrink() : _blankHint(context),
+                              ),
+                            ),
+                          ],
+                        )
+                      : notation,
+                ),
               ),
             if (cur.children.length > 1) _variationRow(context),
             // Only a comment that exists takes a row; an empty one is added
@@ -1162,14 +1341,7 @@ class _GameViewState extends ConsumerState<_GameView> {
                   ),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: MovesText(
-                          comment.isEmpty ? l.addCommentHint : comment,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.tt.comment,
-                        ),
-                      ),
+                      Expanded(child: CommentText(comment, maxLines: 3, overflow: TextOverflow.ellipsis)),
                       Icon(AppIcons.edit, size: AppSizes.iconMd, semanticLabel: l.commentAfter),
                     ],
                   ),
@@ -1337,128 +1509,119 @@ class _GameViewState extends ConsumerState<_GameView> {
   Future<void> _actionsSheet() async {
     final l = context.l10n;
     final cur = _c.current;
-    await showAppSheet<void>(
+    final notation = ref.read(notationFormatterProvider);
+    // The same menu sheet as everywhere (D-114): undo, redo and flip as
+    // tiles, adding to a repertoire as its own group, the rest in one.
+    final v = await showAppMenu<String>(
       context,
-      builder: (ctx) {
-        Widget item(IconData icon, String title, VoidCallback? onTap) => ListTile(
-          minTileHeight: AppSizes.controlLg,
-          leading: Icon(icon),
-          title: Text(title),
-          enabled: onTap != null,
-          onTap: onTap == null
-              ? null
-              : () {
-                  Navigator.pop(ctx);
-                  onTap();
-                },
-        );
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.page, 0, AppSpacing.page, AppSpacing.sm),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: AppButtonSize.large,
-                      onPressed: _c.canUndo
-                          ? () {
-                              Navigator.pop(ctx);
-                              _c.undo();
-                            }
-                          : null,
-                      icon: const Icon(AppIcons.undo),
-                      label: Text(l.undo, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ),
-                  ),
-                  AppGap.h12,
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: AppButtonSize.large,
-                      onPressed: _c.canRedo
-                          ? () {
-                              Navigator.pop(ctx);
-                              _c.redo();
-                            }
-                          : null,
-                      icon: const Icon(AppIcons.redo),
-                      label: Text(l.redo, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Reading a file to learn from it: the lines go to a
-            // repertoire from here (thumb reach), three sizes.
-            if (!_forLine && _c.game.root.children.isNotEmpty) ...[
-              SectionHeader(
-                l.toRepertoireSection,
-                padding: const EdgeInsets.fromLTRB(AppSpacing.page, AppSpacing.lg, AppSpacing.page, AppSpacing.sm),
-              ),
-              ListTile(
-                minTileHeight: AppSizes.controlLg,
-                leading: const Icon(AppIcons.addToRepertoire),
-                title: Text(l.addThisLine),
-                subtitle: MovesText(_lineSummary(), maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _addToRepertoire(lineOnly: true);
-                },
-              ),
-              if (!cur.isRoot && cur.subtreeSize > 0 && cur.descendants().any((n) => n.children.length > 1))
-                item(AppIcons.variations, l.addFromHereWithVariations, () => _addToRepertoire(start: cur)),
-              item(AppIcons.document, l.addWholeGame, _addToRepertoire),
-              const Divider(height: AppSpacing.lg),
-            ],
-            if (cur.children.length > 1) item(AppIcons.variations, l.nextMoveVariations, _chooseVariation),
-            if (_hasVariations) ...[
-              if (_variations != VariationsMode.expanded)
-                item(
-                  AppIcons.expandAll,
-                  l.expandAllVariations,
-                  () => setState(() => _variations = VariationsMode.expanded),
-                ),
-              if (_variations != VariationsMode.collapsed)
-                item(
-                  AppIcons.collapseAll,
-                  l.collapseAllVariations,
-                  () => setState(() => _variations = VariationsMode.collapsed),
-                ),
-            ],
-            item(AppIcons.draw, l.drawMode, () => setState(() => _drawMode = !_drawMode)),
-            item(AppIcons.annotate, l.annotate, cur.isRoot ? null : () => _nagPicker(cur)),
-            item(AppIcons.comment, l.commentAfter, cur.isRoot ? null : () => _editComment(cur)),
-            item(AppIcons.more, l.moveActions, cur.isRoot ? null : () => _nodeMenu(cur)),
-            item(AppIcons.flip, l.flipBoard, () => setState(() => _orientation = _orientation.opposite)),
-            item(AppIcons.toStart, l.toStart, _c.canBack ? _c.toStart : null),
-            item(AppIcons.toEnd, l.toEnd, _c.canForward ? _c.toEnd : null),
-          ],
-        );
-      },
+      title: l.navActions,
+      items: [
+        appMenuTile(value: 'undo', icon: AppIcons.undo, label: l.undo, enabled: _c.canUndo),
+        appMenuTile(value: 'redo', icon: AppIcons.redo, label: l.redo, enabled: _c.canRedo),
+        appMenuTile(value: 'flip', icon: AppIcons.flip, label: l.flipBoard),
+        // Reading a file to learn from it: the lines go to a repertoire
+        // from here (thumb reach), three sizes.
+        if (!_forLine && _c.game.root.children.isNotEmpty) ...[
+          appMenuDivider(l.toRepertoireSection),
+          appMenuItem(
+            value: 'addLine',
+            icon: AppIcons.addToRepertoire,
+            label: l.addThisLine,
+            subtitle: notation.text(_lineSummary()),
+          ),
+          if (!cur.isRoot && cur.subtreeSize > 0 && cur.descendants().any((n) => n.children.length > 1))
+            appMenuItem(value: 'addFromHere', icon: AppIcons.variations, label: l.addFromHereWithVariations),
+          appMenuItem(value: 'addGame', icon: AppIcons.document, label: l.addWholeGame),
+        ],
+        appMenuDivider(),
+        if (cur.children.length > 1)
+          appMenuItem(value: 'variation', icon: AppIcons.variations, label: l.nextMoveVariations),
+        if (_hasVariations && _variations != VariationsMode.expanded)
+          appMenuItem(value: 'expandAll', icon: AppIcons.expandAll, label: l.expandAllVariations),
+        if (_hasVariations && _variations != VariationsMode.collapsed)
+          appMenuItem(value: 'collapseAll', icon: AppIcons.collapseAll, label: l.collapseAllVariations),
+        appMenuItem(value: 'draw', icon: AppIcons.draw, label: l.drawMode, selected: _drawMode),
+        appMenuItem(value: 'annotate', icon: AppIcons.annotate, label: l.annotate, enabled: !cur.isRoot),
+        appMenuItem(value: 'comment', icon: AppIcons.comment, label: l.commentAfter, enabled: !cur.isRoot),
+        appMenuItem(value: 'move', icon: AppIcons.more, label: l.moveActions, enabled: !cur.isRoot),
+        appMenuDivider(),
+        appMenuItem(value: 'start', icon: AppIcons.toStart, label: l.toStart, enabled: _c.canBack),
+        appMenuItem(value: 'end', icon: AppIcons.toEnd, label: l.toEnd, enabled: _c.canForward),
+      ],
     );
+    if (v == null || !mounted) return;
+    switch (v) {
+      case 'undo':
+        _c.undo();
+      case 'redo':
+        _c.redo();
+      case 'flip':
+        setState(() => _orientation = _orientation.opposite);
+      case 'addLine':
+        unawaited(_addToRepertoire(lineOnly: true));
+      case 'addFromHere':
+        unawaited(_addToRepertoire(start: cur));
+      case 'addGame':
+        unawaited(_addToRepertoire());
+      case 'variation':
+        unawaited(_chooseVariation());
+      case 'expandAll':
+        setState(() => _variations = VariationsMode.expanded);
+      case 'collapseAll':
+        setState(() => _variations = VariationsMode.collapsed);
+      case 'draw':
+        setState(() => _drawMode = !_drawMode);
+      case 'annotate':
+        unawaited(_nagPicker(cur));
+      case 'comment':
+        unawaited(_editComment(cur));
+      case 'move':
+        unawaited(_nodeMenu(cur));
+      case 'start':
+        _c.toStart();
+      case 'end':
+        _c.toEnd();
+    }
+  }
+
+  /// "About this position" (D-105) for the current move. The engine panel
+  /// pauses while it is open and resumes after.
+  Future<void> _positionInfo() async {
+    final cur = _c.current;
+    final fen = _c.position.fen;
+    final live = _engine && _liveEval?.fen == fen ? _liveEval : null;
+    setState(() => _infoOpen = true);
+    try {
+      await showPositionInfo(
+        context,
+        PositionInfoArgs(fen: fen, lineKeys: [_c.game.root.key, for (final n in cur.line) n.key], liveEval: live),
+      );
+    } finally {
+      if (mounted) setState(() => _infoOpen = false);
+    }
   }
 
   /// One bottom bar within thumb reach: big buttons with labels (D-035).
+  /// Six equal buttons keep each at least a finger wide on the narrowest
+  /// phone.
   Widget _actionBar(BuildContext context) {
     final l = context.l10n;
     final cur = _c.current;
     return ThumbBar(
       children: [
         Expanded(
-          flex: 4,
           child: BarButton(icon: AppIcons.engine, label: l.navEngine, selected: _engine, onTap: _toggleEngine),
         ),
         Expanded(
-          flex: 4,
           child: BarButton(icon: AppIcons.explorer, label: l.navExplorer, selected: _explorer, onTap: _toggleExplorer),
         ),
         Expanded(
-          flex: 4,
+          child: BarButton(icon: AppIcons.info, label: l.navPosition, onTap: _positionInfo),
+        ),
+        Expanded(
           child: BarButton(icon: AppIcons.options, label: l.navActions, onTap: _actionsSheet),
         ),
         Expanded(
-          flex: 5,
           child: BarButton(
             icon: AppIcons.chevronLeft,
             label: l.navBack,
@@ -1467,7 +1630,6 @@ class _GameViewState extends ConsumerState<_GameView> {
           ),
         ),
         Expanded(
-          flex: 5,
           child: BarButton(
             icon: AppIcons.chevronRight,
             label: l.navNext,
@@ -1485,31 +1647,3 @@ class _NavIntent extends Intent {
   const _NavIntent(this.delta);
   final int delta;
 }
-
-String nagName(int nag, AppLocalizations l) => switch (nag) {
-  1 => l.nagGood,
-  2 => l.nagMistake,
-  3 => l.nagBrilliant,
-  4 => l.nagBlunder,
-  5 => l.nagInteresting,
-  6 => l.nagDubious,
-  7 => l.nagOnlyMove,
-  10 => l.nagEqual,
-  13 => l.nagUnclear,
-  14 => l.nagWhiteSlightly,
-  15 => l.nagBlackSlightly,
-  16 => l.nagWhiteModerate,
-  17 => l.nagBlackModerate,
-  18 => l.nagWhiteDecisive,
-  19 => l.nagBlackDecisive,
-  22 => l.nagZugzwang,
-  32 => l.nagDevelopment,
-  36 => l.nagInitiative,
-  40 => l.nagAttack,
-  44 => l.nagCompensation,
-  132 => l.nagCounterplay,
-  138 => l.nagTimeTrouble,
-  140 => l.nagWithIdea,
-  146 => l.nagNovelty,
-  _ => nagSymbol(nag).isEmpty ? '\$$nag' : nagSymbol(nag),
-};

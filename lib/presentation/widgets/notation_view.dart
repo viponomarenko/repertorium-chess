@@ -11,6 +11,35 @@ import 'san_text.dart';
 import 'spoken.dart';
 import 'ui/motion.dart';
 
+/// NAG code -> its name, for tooltips and screen readers.
+String nagName(int nag, AppLocalizations l) => switch (nag) {
+  1 => l.nagGood,
+  2 => l.nagMistake,
+  3 => l.nagBrilliant,
+  4 => l.nagBlunder,
+  5 => l.nagInteresting,
+  6 => l.nagDubious,
+  7 => l.nagOnlyMove,
+  10 => l.nagEqual,
+  13 => l.nagUnclear,
+  14 => l.nagWhiteSlightly,
+  15 => l.nagBlackSlightly,
+  16 => l.nagWhiteModerate,
+  17 => l.nagBlackModerate,
+  18 => l.nagWhiteDecisive,
+  19 => l.nagBlackDecisive,
+  22 => l.nagZugzwang,
+  32 => l.nagDevelopment,
+  36 => l.nagInitiative,
+  40 => l.nagAttack,
+  44 => l.nagCompensation,
+  132 => l.nagCounterplay,
+  138 => l.nagTimeTrouble,
+  140 => l.nagWithIdea,
+  146 => l.nagNovelty,
+  _ => nagSymbol(nag).isEmpty ? '\$$nag' : nagSymbol(nag),
+};
+
 /// NAG code -> symbol (F-VIEW-02).
 String nagSymbol(int nag) => switch (nag) {
   1 => '!',

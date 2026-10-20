@@ -5,7 +5,7 @@ Usage: python3 tool/l10n/build_arb.py
 import json, os, re, sys
 sys.path.insert(0, os.path.dirname(__file__))
 from strings_a import S
-import strings_b, strings_c, strings_d, strings_e, strings_f, strings_arb, strings_g  # noqa: F401  (register strings)
+import strings_b, strings_c, strings_d, strings_e, strings_f, strings_arb, strings_g, strings_h, strings_i, strings_j  # noqa: F401  (register strings)
 
 en = {'@@locale': 'en'}
 uk = {'@@locale': 'uk'}

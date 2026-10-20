@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dartchess/dartchess.dart' hide PgnComment;
@@ -65,6 +66,14 @@ class RepertoireSummary {
   RepertoireOptions get options => RepertoireOptions.decode(row.optionsJson);
 }
 
+/// The first half-moves of a line and where its numbering starts.
+class FirstMoves {
+  const FirstMoves(this.sans, {this.moveNumber = 1, this.whiteFirst = true});
+  final List<String> sans;
+  final int moveNumber;
+  final bool whiteFirst;
+}
+
 class ProblemPosition {
   const ProblemPosition(this.repertoireId, this.key, this.errors, this.lastSeen);
   final int repertoireId;
@@ -95,10 +104,59 @@ class RepertoireSnapshot {
   final List<GapEventRow> _gaps;
 }
 
+/// A repertoire a position belongs to, with its comment there (D-105).
+class PositionCommentRef {
+  const PositionCommentRef({required this.repertoireId, required this.repertoireName, required this.comment});
+  final int repertoireId;
+  final String repertoireName;
+  final String comment;
+}
+
+/// A position comment changed outside the repertoire screen.
+typedef PositionCommentEdit = ({int repertoireId, PositionKey key, String comment});
+
 class RepertoireRepository {
   RepertoireRepository(this.db, {Fsrs? fsrs}) : fsrs = fsrs ?? Fsrs();
   final AppDatabase db;
   Fsrs fsrs;
+  final _commentEdits = StreamController<PositionCommentEdit>.broadcast();
+
+  /// Comments written by [setPositionComment], so an open repertoire keeps
+  /// its graph in step instead of writing an old comment back later.
+  Stream<PositionCommentEdit> get positionCommentEdits => _commentEdits.stream;
+
+  // ------------------------------------------------------------ comments
+
+  /// Every repertoire that has the position [key], in the list's order,
+  /// with its comment there (possibly empty). Transpositions share a key,
+  /// so any move order finds the same comments.
+  Future<List<PositionCommentRef>> positionComments(PositionKey key) async {
+    final q = db.select(db.repPositions).join([
+      innerJoin(db.repertoires, db.repertoires.id.equalsExp(db.repPositions.repertoireId)),
+    ])
+      ..where(db.repPositions.positionKey.equals(key))
+      ..orderBy([OrderingTerm.asc(db.repertoires.sortOrder), OrderingTerm.asc(db.repertoires.createdAt)]);
+    final rows = await q.get();
+    return [
+      for (final r in rows)
+        PositionCommentRef(
+          repertoireId: r.readTable(db.repertoires).id,
+          repertoireName: r.readTable(db.repertoires).name,
+          comment: r.readTable(db.repPositions).comment,
+        ),
+    ];
+  }
+
+  /// Writes the comment of [key] in repertoire [repertoireId] (the same
+  /// field the repertoire screen edits) and tells open repertoires.
+  Future<void> setPositionComment(int repertoireId, PositionKey key, String comment) async {
+    await (db.update(db.repPositions)
+          ..where((p) => p.repertoireId.equals(repertoireId) & p.positionKey.equals(key)))
+        .write(RepPositionsCompanion(comment: Value(comment)));
+    await (db.update(db.repertoires)..where((r) => r.id.equals(repertoireId)))
+        .write(RepertoiresCompanion(updatedAt: Value(DateTime.now())));
+    _commentEdits.add((repertoireId: repertoireId, key: key, comment: comment));
+  }
 
   // ------------------------------------------------------------ list
 
@@ -137,6 +195,41 @@ FROM repertoires r ORDER BY r.sort_order, r.created_at
               ),
           ],
         );
+  }
+
+  /// The start of a repertoire's main line, for its card (D-104): the
+  /// user's main moves and the opponent's most frequent replies, up to
+  /// [plies] half-moves from the root.
+  Stream<FirstMoves> watchFirstMoves(int id, {int plies = 5}) {
+    final q = db.select(db.repMoves)..where((m) => m.repertoireId.equals(id));
+    return q.watch().asyncMap((moves) async {
+      final rep = await repertoire(id);
+      if (rep == null) return const FirstMoves([]);
+      final from = <String, List<RepMoveRow>>{};
+      for (final m in moves) {
+        (from[m.fromKey] ??= []).add(m);
+      }
+      final fen = rep.rootFen.split(' ');
+      final whiteToMove = fen.length < 2 || fen[1] != 'b';
+      final moveNumber = fen.length < 6 ? 1 : int.tryParse(fen[5]) ?? 1;
+      final sans = <String>[];
+      var key = rep.rootKey;
+      final seen = <String>{};
+      while (sans.length < plies && seen.add(key)) {
+        final options = from[key];
+        if (options == null || options.isEmpty) break;
+        options.sort((a, b) {
+          int rank(RepMoveRow m) => m.role == 'main' ? 0 : (m.role == 'alternative' ? 2 : 1);
+          final r = rank(a).compareTo(rank(b));
+          if (r != 0) return r;
+          final w = b.weight.compareTo(a.weight);
+          return w != 0 ? w : a.sortOrder.compareTo(b.sortOrder);
+        });
+        sans.add(options.first.san);
+        key = options.first.toKey;
+      }
+      return FirstMoves(sans, moveNumber: moveNumber, whiteFirst: whiteToMove);
+    });
   }
 
   Future<RepertoireRow?> repertoire(int id) =>

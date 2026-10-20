@@ -23,6 +23,8 @@ import '../theme/app_icons.dart';
 import '../training/training_args.dart';
 import '../widgets/board_layout.dart';
 import '../widgets/board_view.dart';
+import '../widgets/comment_editor.dart';
+import '../widgets/comment_text.dart';
 import '../widgets/common.dart';
 import '../widgets/notation_view.dart';
 import '../widgets/san_text.dart';
@@ -298,7 +300,16 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
             subtitle: m.comment.isEmpty ? null : MovesText(m.comment, maxLines: 2, overflow: TextOverflow.ellipsis),
             onTap: () async {
               Navigator.pop(ctx);
-              final t = await promptText(context, title: l.moveComment, initial: m.comment, maxLines: 6);
+              final before = g.positions[m.fromKey]?.fen;
+              final move = before == null ? null : numberedSan(before, m.san);
+              final t = await showCommentEditor(
+                context,
+                title: l.moveComment,
+                initial: m.comment,
+                fen: g.positions[m.toKey]?.fen,
+                orientation: g.color,
+                subtitle: move == null ? null : l.commentAfterMove(move),
+              );
               if (t != null) await c.setMoveComment(m, t.trim());
             },
           ),
@@ -470,7 +481,21 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
       ),
     );
     Future<void> editComment() async {
-      final t = await promptText(context, title: l.positionComment, initial: repPos?.comment ?? '', maxLines: 6);
+      // Where the comment belongs: the move that led here and the opening.
+      final last = c.path.isEmpty ? null : c.path.last;
+      final before = last == null ? null : g.positions[last.fromKey]?.fen;
+      final move = last == null || before == null ? null : numberedSan(before, last.san);
+      final t = await showCommentEditor(
+        context,
+        title: l.positionComment,
+        initial: repPos?.comment ?? '',
+        fen: pos.fen,
+        orientation: g.color,
+        subtitle: [
+          move == null ? l.commentStartPosition : l.commentAfterMove(move),
+          if (opening != null) '${opening.eco} ${opening.name}',
+        ].join(' · '),
+      );
       if (t != null) await c.setPositionComment(key, t.trim());
     }
 
@@ -595,7 +620,7 @@ class _RepertoireBrowserState extends ConsumerState<RepertoireBrowser> with Auto
           onTap: editComment,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page, vertical: AppSpacing.xs),
-            child: MovesText(repPos.comment, style: context.tt.comment),
+            child: CommentText(repPos.comment),
           ),
         ),
       if (inRep && moves.isEmpty)
@@ -1249,7 +1274,11 @@ class _MoveTile extends ConsumerWidget {
               for (final mark in marks) ...[AppGap.h4, mark],
               AppGap.h8,
               Expanded(
-                child: MovesText(note, style: small, maxLines: 1, overflow: TextOverflow.ellipsis),
+                // A comment stands out like every comment under the board
+                // (D-109); otherwise the grey hint (role, line ends).
+                child: m.comment.isNotEmpty
+                    ? CommentText(m.comment, maxLines: 1, overflow: TextOverflow.ellipsis)
+                    : MovesText(note, style: small, maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
               menu,
             ],

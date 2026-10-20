@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n.dart';
 import '../../domain/training/training_engine.dart';
 import '../training/training_args.dart';
+import '../widgets/common.dart';
 import 'stats_view.dart';
 
 class StatsScreen extends StatelessWidget {
@@ -13,7 +14,7 @@ class StatsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.statsTitle)),
+      appBar: PageBar(bar: AppBar(title: Text(context.l10n.statsTitle))),
       body: StatsView(
         repertoireId: repertoireId,
         onTrainProblem: (p) => context.push(

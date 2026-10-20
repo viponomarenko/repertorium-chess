@@ -298,7 +298,9 @@ class LichessClient {
     bool auth = true,
     Future<void>? abort,
     Duration? requestTimeout,
+    int? retries,
   }) async {
+    final maxRetries = retries ?? maxRateLimitRetries;
     for (var attempt = 0; ; attempt++) {
       final cooldown = _cooldown;
       if (cooldown != null) await _withAbort(cooldown, abort, url);
@@ -316,10 +318,11 @@ class LichessClient {
       final sending = requestTimeout == null ? _client.send(req) : _client.send(req).timeout(requestTimeout);
       final res = await _withAbort(sending, abort, url);
       if (res.statusCode == 429) {
-        if (!_closed) _rateLimited.add(rateLimitPause);
+        // The notice says "waiting a minute": only when a retry follows.
+        if (!_closed && attempt < maxRetries) _rateLimited.add(rateLimitPause);
         // The pause belongs to the client, even if this request is cancelled.
         _cooldown ??= _sleep(rateLimitPause).whenComplete(() => _cooldown = null);
-        if (attempt < maxRateLimitRetries) {
+        if (attempt < maxRetries) {
           await _withAbort(res.stream.drain<void>(), abort, url);
           continue;
         }
@@ -333,19 +336,24 @@ class LichessClient {
     Uri url, {
     String accept = 'application/json',
     Map<String, String>? form,
+    String? body,
+    String? contentType,
     bool auth = true,
     Set<int> ok = const {200},
+    int? retries,
   }) => _queued(() async {
     final abort = Completer<void>();
     try {
       final res = await _send(
         method,
         url,
-        headers: {'Accept': accept},
+        headers: {'Accept': accept, 'Content-Type': ?contentType},
         form: form,
+        body: body,
         auth: auth,
         abort: abort.future,
         requestTimeout: const Duration(seconds: 30),
+        retries: retries,
       );
       final text = await res.stream.bytesToString().timeout(const Duration(seconds: 60));
       if (!ok.contains(res.statusCode)) throw LichessException(res.statusCode, _errorMessage(text));
@@ -365,8 +373,24 @@ class LichessClient {
     return body.length > 200 ? body.substring(0, 200) : body;
   }
 
-  Future<Map<String, Object?>> _json(String method, Uri url, {Map<String, String>? form, bool auth = true}) async {
-    final text = await _text(method, url, form: form, auth: auth);
+  Future<Map<String, Object?>> _json(
+    String method,
+    Uri url, {
+    Map<String, String>? form,
+    String? body,
+    String? contentType,
+    bool auth = true,
+    int? retries,
+  }) async {
+    final text = await _text(
+      method,
+      url,
+      form: form,
+      body: body,
+      contentType: contentType,
+      auth: auth,
+      retries: retries,
+    );
     return (jsonDecode(text) as Map).cast<String, Object?>();
   }
 
@@ -499,7 +523,8 @@ class LichessClient {
     auth: false,
   );
 
-  /// Streams a user's games, newest first (F-LI-08).
+  /// Streams a user's games, newest first or, with [oldestFirst], oldest
+  /// first (F-LI-08).
   Stream<LichessGame> userGames(
     String username, {
     DateTime? since,
@@ -508,8 +533,10 @@ class LichessClient {
     List<String>? perfTypes,
     bool? rated,
     String? color,
+    bool oldestFirst = false,
   }) {
     final q = <String, String>{
+      if (oldestFirst) 'sort': 'dateAsc',
       'pgnInJson': 'true',
       'clocks': 'false',
       'evals': 'false',
@@ -525,6 +552,57 @@ class LichessClient {
     };
     return _ndjson(_uri(host, '/api/games/user/$username', q)).map(LichessGame.fromJson);
   }
+
+  // ------------------------------------------------------------ puzzles
+
+  /// Puzzles in [angle] (a theme or `mix`), D-123/D-125/D-126, and the
+  /// player's puzzle rating on Lichess (`glicko`, only with [auth]).
+  ///
+  /// Lichess charges a call per puzzle asked: anonymous one credit each,
+  /// with the account's token a third of that; 300 credits an hour per IP
+  /// (up to five times dearer on some networks). So callers ask for what
+  /// they show. Without [auth] the token is not sent and [difficulty] is
+  /// relative to 1500 (`easiest` -600 … `hardest` +600); with it, relative
+  /// to the player's Lichess rating. A 429 here is not retried: the limit
+  /// is per hour, a minute's wait would not lift it.
+  Future<({List<Map<String, Object?>> puzzles, Map<String, Object?>? glicko})> puzzleBatch(
+    String angle, {
+    int nb = 1,
+    String difficulty = 'normal',
+    bool auth = false,
+  }) async {
+    final j = await _json(
+      'GET',
+      _uri(host, '/api/puzzle/batch/${Uri.encodeComponent(angle)}', {
+        'nb': '${nb.clamp(1, 50)}',
+        'difficulty': difficulty,
+      }),
+      auth: auth,
+      retries: 0,
+    );
+    return (
+      puzzles: [
+        for (final p in (j['puzzles'] as List?) ?? const [])
+          if (p is Map) p.cast<String, Object?>(),
+      ],
+      glicko: (j['glicko'] as Map?)?.cast<String, Object?>(),
+    );
+  }
+
+  /// Sends puzzle results of [angle] (needs `puzzle:write`): Lichess counts
+  /// them into the player's rating and answers with the new `glicko` and
+  /// the `rounds` (`id`, `win`, `ratingDiff`). At most 50 at once.
+  Future<Map<String, Object?>> puzzleSolve(String angle, List<({String id, bool win})> results) => _json(
+    'POST',
+    _uri(host, '/api/puzzle/batch/${Uri.encodeComponent(angle)}', {'nb': '0'}),
+    body: jsonEncode({
+      'solutions': [
+        for (final r in results.take(50)) {'id': r.id, 'win': r.win, 'rated': true},
+      ],
+    }),
+    contentType: 'application/json',
+    retries: 0,
+  );
 
   // ------------------------------------------------------------ explorer
 

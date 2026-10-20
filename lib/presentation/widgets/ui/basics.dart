@@ -92,6 +92,16 @@ class AppBarAction extends StatelessWidget {
   }
 }
 
+/// The chevron at the end of a row that leads somewhere: small and grey,
+/// as on iOS - a hint, not a button (D-122).
+class ListChevron extends StatelessWidget {
+  const ListChevron({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      Icon(AppIcons.chevronRight, size: AppSizes.iconSm, color: Theme.of(context).colorScheme.outline);
+}
+
 class SectionHeader extends StatelessWidget {
   const SectionHeader(this.text, {super.key, this.trailing, this.padding = AppInsets.sectionHeader});
   final String text;
@@ -326,6 +336,11 @@ class PageScope extends InheritedWidget {
   bool updateShouldNotify(PageScope old) => old.width != width;
 }
 
+/// A tablet layout: the navigation stands at the side (D-084) and the
+/// pages that have one show their wide version (D-104). Measured on the
+/// window, not the page, so both switch together.
+bool isWideLayout(BuildContext context) => MediaQuery.sizeOf(context).width >= AppBreakpoints.wide;
+
 /// The margin that keeps a page a readable column in the middle of a wide
 /// screen (zero on a phone). It goes into the padding of the list, not
 /// around it, so the page scrolls from anywhere on the screen.
@@ -336,6 +351,24 @@ extension PageInsets on EdgeInsets {
   /// These insets plus the [pageGutter] at the sides.
   EdgeInsets inPage(BuildContext context, {double width = AppSizes.maxContentWidth}) =>
       this + EdgeInsets.symmetric(horizontal: pageGutter(context, width: width));
+}
+
+/// The app bar of a page laid out as a column: on a wide screen the back
+/// button, the title and the actions line up with the column under them,
+/// as on a phone, instead of drifting to the edges of the screen.
+class PageBar extends StatelessWidget implements PreferredSizeWidget {
+  const PageBar({super.key, required this.bar, this.width = AppSizes.maxContentWidth});
+  final PreferredSizeWidget bar;
+  final double width;
+
+  @override
+  Size get preferredSize => bar.preferredSize;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.symmetric(horizontal: pageGutter(context, width: width)),
+    child: bar,
+  );
 }
 
 /// Something above or below a list (a search field, filters, a note) kept
@@ -464,10 +497,10 @@ class ChoiceOption<T> {
   final Widget? icon;
 }
 
-/// Single choice among a few options. A segmented button while every label
-/// fits on one line; without the check mark if only that helps; otherwise
-/// (long translations, large system text) wrapping chips, so a word is
-/// never broken inside a segment (T-20, T-21).
+/// Single choice among a few options. A capsule with a black puck under
+/// the chosen label (D-122, as [IconSegmentedSwitch]) while every label
+/// fits on one line; otherwise (long translations, large system text)
+/// wrapping chips, so a word is never broken inside a segment (T-20, T-21).
 class ChoiceSegments<T> extends StatelessWidget {
   const ChoiceSegments({super.key, required this.options, required this.selected, required this.onChanged});
   final List<ChoiceOption<T>> options;
@@ -511,17 +544,8 @@ class ChoiceSegments<T> extends StatelessWidget {
           final segment = cons.maxWidth / options.length;
           bool fits({required bool check}) =>
               options.every((o) => width(o.label) + _padding + (check || o.icon != null ? _iconSpace : 0) <= segment);
-          final withCheck = fits(check: true);
-          if (withCheck || fits(check: false)) {
-            return SegmentedButton<T>(
-              showSelectedIcon: withCheck,
-              segments: [
-                for (final o in options)
-                  ButtonSegment(value: o.value, icon: o.icon, label: Text(o.label, maxLines: 1, softWrap: false)),
-              ],
-              selected: {selected},
-              onSelectionChanged: (s) => onChanged(s.first),
-            );
+          if (fits(check: false)) {
+            return SegmentCapsule<T>(options: options, selected: selected, onChanged: onChanged, height: height);
           }
           return Wrap(
             spacing: AppSpacing.sm,
@@ -537,6 +561,98 @@ class ChoiceSegments<T> extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// The segments of [ChoiceSegments]: equal parts of a grey capsule, a black
+/// puck slides under the chosen one, rounded at both ends wherever it is.
+class SegmentCapsule<T> extends StatelessWidget {
+  const SegmentCapsule({
+    super.key,
+    required this.options,
+    required this.selected,
+    required this.onChanged,
+    required this.height,
+  });
+  final List<ChoiceOption<T>> options;
+  final T selected;
+  final ValueChanged<T> onChanged;
+  final double height;
+
+  /// Room between the capsule and the puck.
+  static const double _inset = 3;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final m = AppMotion.of(context);
+    final index = math.max(0, options.indexWhere((o) => o.value == selected));
+    final n = options.length;
+    final style = Theme.of(context).textTheme.labelLarge!;
+    // The grey capsule and the puck inside it are drawn inset; the tap
+    // areas take the whole height (48).
+    return Container(
+      height: height,
+      decoration: BoxDecoration(color: cs.secondaryContainer, borderRadius: AppRadius.full),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(_inset),
+            child: AnimatedAlign(
+              duration: m.enter,
+              curve: AppMotion.accent,
+              alignment: Alignment(n == 1 ? 0 : -1 + 2 * index / (n - 1), 0),
+              child: FractionallySizedBox(
+                widthFactor: 1 / n,
+                heightFactor: 1,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: cs.primary, borderRadius: AppRadius.full),
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              for (final (i, o) in options.indexed)
+                Expanded(
+                  child: Semantics(
+                    button: true,
+                    selected: i == index,
+                    child: InkWell(
+                      customBorder: const StadiumBorder(),
+                      onTap: () => onChanged(o.value),
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (o.icon != null) ...[
+                              IconTheme.merge(
+                                data: IconThemeData(
+                                  size: AppSizes.iconMd,
+                                  color: i == index ? cs.onPrimary : cs.onSurface,
+                                ),
+                                child: o.icon!,
+                              ),
+                              AppGap.h8,
+                            ],
+                            Flexible(
+                              child: AnimatedDefaultTextStyle(
+                                duration: m.base,
+                                style: style.copyWith(color: i == index ? cs.onPrimary : cs.onSurface),
+                                child: Text(o.label, maxLines: 1, softWrap: false, overflow: TextOverflow.fade),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -669,7 +785,7 @@ class ChoiceTile<T> extends StatelessWidget {
         hint == null ? current : '$current\n$hint',
         style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       ),
-      trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
+      trailing: const ListChevron(),
       onTap: () async {
         final picked = await showAppModal<ChoiceOption<T>>(
           context,
@@ -702,8 +818,11 @@ class ChoiceTile<T> extends StatelessWidget {
 }
 
 /// A big bottom-bar button (≥ 56 dp) with an icon and a label; when
-/// selected it becomes a black rounded square (white in dark mode). Used by
-/// the main navigation and the analysis tool bar (D-035).
+/// selected it becomes a black rounded square (white in dark mode) - a
+/// tool that is on. A [navigation] button (the app's tabs) says "you are
+/// here" more quietly: a soft grey square, the filled icon and a bolder
+/// label (D-118). Used by the main navigation and the analysis tool bar
+/// (D-035).
 class BarButton extends StatelessWidget {
   const BarButton({
     super.key,
@@ -714,7 +833,9 @@ class BarButton extends StatelessWidget {
     this.selected = false,
     this.selectedIcon,
     this.badge,
+    this.navigation = false,
   });
+  final bool navigation;
   final IconData icon;
   final IconData? selectedIcon;
   final String label;
@@ -726,9 +847,10 @@ class BarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final fill = navigation ? cs.surfaceContainerHigh : cs.primary;
     final fg = onTap == null
         ? cs.onSurfaceVariant.withValues(alpha: AppOpacity.muted)
-        : (selected ? cs.onPrimary : cs.onSurface);
+        : (selected && !navigation ? cs.onPrimary : cs.onSurface);
     Widget iconW = Icon(selected ? (selectedIcon ?? icon) : icon, size: AppSizes.iconLg, color: fg);
     if (badge != null) iconW = Badge(label: badge, child: iconW);
     return Padding(
@@ -744,10 +866,7 @@ class BarButton extends StatelessWidget {
           duration: AppMotion.of(context).base,
           curve: AppMotion.standard,
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: selected ? cs.primary : cs.primary.withValues(alpha: 0),
-            borderRadius: AppRadius.mdAll,
-          ),
+          decoration: BoxDecoration(color: selected ? fill : fill.withValues(alpha: 0), borderRadius: AppRadius.mdAll),
           child: Material(
             type: MaterialType.transparency,
             child: InkWell(
@@ -770,7 +889,8 @@ class BarButton extends StatelessWidget {
                         child: Text(
                           label,
                           maxLines: 1,
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: fg),
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(color: fg, fontWeight: navigation && selected ? FontWeight.w600 : null),
                         ),
                       ),
                     ),

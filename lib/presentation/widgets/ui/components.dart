@@ -569,11 +569,12 @@ class FilterPill<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return PopupMenuButton<T>(
-      constraints: appMenuConstraints,
+    // The menu works with positions: a choice whose value is null ("All")
+    // would read as a closed menu and never reach [onSelected].
+    return AppMenuButton<int>(
       tooltip: label,
-      onSelected: onSelected,
-      itemBuilder: (_) => [for (final (v, t) in items) appMenuItem(value: v, label: t)],
+      onSelected: (i) => onSelected(items[i].$1),
+      itemBuilder: (_) => [for (final (i, (_, t)) in items.indexed) appMenuItem(value: i, label: t)],
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: AppSizes.tapTarget),
         child: Center(
@@ -659,7 +660,7 @@ class NavTile extends StatelessWidget {
     leading: Icon(icon),
     title: Text(title),
     subtitle: subtitle == null ? null : Text(subtitle!),
-    trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
+    trailing: const ListChevron(),
     onTap: onTap,
   );
 }

@@ -124,6 +124,79 @@ void main() {
       expect(error, isA<http.ClientException>());
     });
 
+    test('puzzle batch: no token, theme in the path, puzzles parsed', () async {
+      late http.BaseRequest seen;
+      final client = LichessClient(
+        client: MockClient.streaming((req, _) async {
+          seen = req;
+          return _text('{"puzzles":[{"game":{"id":"g","pgn":"e4"},"puzzle":{"id":"p1"}}],"glicko":{}}', 200);
+        }),
+        userAgent: 'ua',
+        tokenProvider: () async => 'lip_token',
+      );
+      final list = await client.puzzleBatch('mateIn2', nb: 99, difficulty: 'harder');
+      expect(list.puzzles.single['puzzle'], {'id': 'p1'});
+      expect(seen.url.path, '/api/puzzle/batch/mateIn2');
+      expect(seen.url.queryParameters, {'nb': '50', 'difficulty': 'harder'});
+      expect(seen.headers.containsKey('Authorization'), isFalse);
+    });
+
+    test('puzzle batch with the account: token sent, rating returned; results posted as JSON', () async {
+      final seen = <http.BaseRequest>[];
+      final bodies = <String>[];
+      final client = LichessClient(
+        client: MockClient((req) async {
+          seen.add(req);
+          bodies.add(req.body);
+          return http.Response(
+            req.method == 'GET'
+                ? '{"puzzles":[],"glicko":{"rating":1801.4,"deviation":69.1}}'
+                : '{"puzzles":[],"glicko":{"rating":1810,"deviation":68},"rounds":[{"id":"p1","win":true,"ratingDiff":9}]}',
+            200,
+          );
+        }),
+        userAgent: 'ua',
+        tokenProvider: () async => 'lip_token',
+      );
+      final batch = await client.puzzleBatch('fork', nb: 3, auth: true);
+      expect(batch.glicko?['rating'], 1801.4);
+      expect(seen.last.headers['Authorization'], 'Bearer lip_token');
+      expect(seen.last.url.queryParameters['nb'], '3');
+      final r = await client.puzzleSolve('fork', [(id: 'p1', win: true)]);
+      expect(seen.last.method, 'POST');
+      expect(seen.last.url.path, '/api/puzzle/batch/fork');
+      expect(seen.last.url.queryParameters['nb'], '0');
+      expect(seen.last.headers['Content-Type'], startsWith('application/json'));
+      expect(jsonDecode(bodies.last), {
+        'solutions': [
+          {'id': 'p1', 'win': true, 'rated': true},
+        ],
+      });
+      expect((r['rounds'] as List).single, {'id': 'p1', 'win': true, 'ratingDiff': 9});
+    });
+
+    test('puzzle batch: a 429 is not retried and raises no "waiting" notice', () async {
+      var calls = 0;
+      final client = LichessClient(
+        client: MockClient.streaming((req, _) async {
+          calls++;
+          return _text('{"error":"Too many requests"}', 429);
+        }),
+        userAgent: 'ua',
+        sleep: (_) async {},
+      );
+      final events = <Duration>[];
+      final sub = client.rateLimitEvents.listen(events.add);
+      await expectLater(
+        client.puzzleBatch('fork'),
+        throwsA(isA<LichessException>().having((e) => e.isRateLimited, 'rate limited', isTrue)),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(calls, 1);
+      expect(events, isEmpty);
+      await sub.cancel();
+    });
+
     test('cloud eval 404 returns null', () async {
       final client = LichessClient(
         client: MockClient.streaming(

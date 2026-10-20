@@ -15,6 +15,84 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "IncomingFilesPlugin") {
       IncomingFilesPlugin.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WindowControlsPlugin") {
+      WindowControlsPlugin.register(with: registrar)
+    }
+  }
+}
+
+/// iPadOS 26+ draws the window buttons (close, minimise, tile) over the
+/// app's top-left corner when it runs in a window. Flutter's safe area
+/// leaves them out, so this tells Dart how far below the safe area they
+/// reach; the app moves its content down by that much.
+class WindowControlsPlugin: NSObject, FlutterPlugin {
+  private var channel: FlutterMethodChannel?
+  private weak var registrar: FlutterPluginRegistrar?
+  private var probe: UIView?
+  private var last: CGFloat = -1
+
+  static func register(with registrar: FlutterPluginRegistrar) {
+    let instance = WindowControlsPlugin()
+    let channel = FlutterMethodChannel(name: "app.tabiya/window", binaryMessenger: registrar.messenger())
+    instance.channel = channel
+    instance.registrar = registrar
+    registrar.addMethodCallDelegate(instance, channel: channel)
+  }
+
+  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard call.method == "start" else { return result(FlutterMethodNotImplemented) }
+    if probe == nil, let view = registrar?.viewController?.view {
+      attach(to: view)
+    }
+    result(nil)
+  }
+
+  private func attach(to view: UIView) {
+    guard #available(iOS 26.0, *) else { return }
+    // An invisible strip from the top of the view to the top of the area
+    // clear of the window buttons: its height changes whenever they move.
+    let strip = ProbeView { [weak self, weak view] in
+      guard let self, let view else { return }
+      let clear = view.edgeInsets(for: .safeArea(cornerAdaptation: .vertical)).top
+      self.send(max(0, clear - view.safeAreaInsets.top))
+    }
+    strip.isUserInteractionEnabled = false
+    strip.isHidden = true
+    strip.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(strip)
+    let guide = view.layoutGuide(for: .safeArea(cornerAdaptation: .vertical))
+    NSLayoutConstraint.activate([
+      strip.topAnchor.constraint(equalTo: view.topAnchor),
+      strip.bottomAnchor.constraint(equalTo: guide.topAnchor),
+      strip.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      strip.widthAnchor.constraint(equalToConstant: 1),
+    ])
+    probe = strip
+  }
+
+  private func send(_ extra: CGFloat) {
+    guard extra != last else { return }
+    last = extra
+    channel?.invokeMethod("controls", arguments: Double(extra))
+  }
+}
+
+private class ProbeView: UIView {
+  private let onChange: () -> Void
+  init(onChange: @escaping () -> Void) {
+    self.onChange = onChange
+    super.init(frame: .zero)
+  }
+  required init?(coder: NSCoder) { fatalError() }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    onChange()
+  }
+
+  override func safeAreaInsetsDidChange() {
+    super.safeAreaInsetsDidChange()
+    onChange()
   }
 }
 

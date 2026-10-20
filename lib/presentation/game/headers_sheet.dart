@@ -87,24 +87,26 @@ class _HeadersEditorState extends State<_HeadersEditor> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l.gameInfo),
-        actions: [
-          TextButton(
-            onPressed: () {
-              final out = <String, String>{..._lockedHeaders};
-              for (final (k, v) in _rows) {
-                final key = k.text.trim().replaceAll(RegExp(r'\s+'), '');
-                if (key.isEmpty || _locked(key)) continue;
-                final value = v.text.trim();
-                if (value.isEmpty && !_common.take(7).contains(key)) continue;
-                out[key] = value.isEmpty ? (key == 'Date' ? '????.??.??' : (key == 'Result' ? '*' : '?')) : value;
-              }
-              Navigator.pop(context, out);
-            },
-            child: Text(l.save),
-          ),
-        ],
+      appBar: PageBar(
+        bar: AppBar(
+          title: Text(l.gameInfo),
+          actions: [
+            TextButton(
+              onPressed: () {
+                final out = <String, String>{..._lockedHeaders};
+                for (final (k, v) in _rows) {
+                  final key = k.text.trim().replaceAll(RegExp(r'\s+'), '');
+                  if (key.isEmpty || _locked(key)) continue;
+                  final value = v.text.trim();
+                  if (value.isEmpty && !_common.take(7).contains(key)) continue;
+                  out[key] = value.isEmpty ? (key == 'Date' ? '????.??.??' : (key == 'Result' ? '*' : '?')) : value;
+                }
+                Navigator.pop(context, out);
+              },
+              child: Text(l.save),
+            ),
+          ],
+        ),
       ),
       body: ListView(
         padding: AppInsets.page.inPage(context),

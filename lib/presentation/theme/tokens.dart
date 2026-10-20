@@ -50,6 +50,9 @@ abstract final class AppInsets {
   /// Content of a bottom sheet under its handle.
   static const sheet = EdgeInsets.fromLTRB(AppSpacing.page, 0, AppSpacing.page, AppSpacing.lg);
 
+  /// A block caption inside a sheet: room above it, close to its content.
+  static const blockHeader = EdgeInsets.fromLTRB(0, AppSpacing.lg, 0, AppSpacing.xs);
+
   /// Title of a bottom sheet.
   static const sheetTitle = EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.md);
 
@@ -134,6 +137,15 @@ abstract final class AppRadius {
 
 /// Sizes of icons, controls and rows.
 abstract final class AppSizes {
+  /// The miniature of the position in the comment editor (D-110).
+  static const double commentBoard = 72;
+
+  /// A chess-sign key in the comment editor, inside a [tapTarget] square.
+  static const double symbolKey = 40;
+
+  /// The column of evaluations (+0,32) before engine lines in a sheet.
+  static const double evalColumn = 56;
+
   /// An icon inside a line of small text.
   static const double iconSm = 16;
 
@@ -200,6 +212,10 @@ abstract final class AppSizes {
   /// Two columns of a dashboard: the narrow one and both with the gap.
   static const double dashboardSide = 420;
   static const double dashboardWidth = 1040;
+
+  /// The narrowest card of a grid of cards (D-104): two fit side by side
+  /// on a tablet upright, one on a phone.
+  static const double gridCardMin = 300;
 }
 
 /// Widths at which the layout changes (D-084).
@@ -269,6 +285,12 @@ abstract final class TrainingPace {
 
   /// How long the ✓ / ✗ mark stays on the square.
   static const Duration mark = Duration(milliseconds: 900);
+
+  /// A puzzle: the position before the opponent's move that sets it.
+  static const Duration puzzleIntro = Duration(milliseconds: 600);
+
+  /// Between the moves of a shown puzzle solution.
+  static const Duration solutionStep = Duration(milliseconds: 700);
 }
 
 /// Size variants of the theme's buttons, to pass as `style:`. The colours

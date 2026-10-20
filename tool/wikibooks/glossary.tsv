@@ -1,0 +1,99 @@
+english	українською	примітка
+pawn	пішак
+knight	кінь
+bishop	слон
+rook	тура
+queen	ферзь
+king	король
+piece	фігура	«minor piece» - легка фігура, «major piece» - важка фігура
+White / Black (the side)	білі / чорні	з малої літери, множина: «білі грають», «чорні відповідають»
+castling / to castle	рокіровка / рокірувати	«castles kingside» - робить коротку рокіровку
+kingside / queenside	королівський фланг / ферзевий фланг
+center	центр
+development / to develop	розвиток / розвивати
+tempo	темп	«with tempo» - з темпом
+gambit	гамбіт
+fianchetto	фіанкето
+pin	звʼязка	«the knight is pinned» - кінь звʼязаний
+fork	вилка
+skewer	лінійний удар
+discovered attack	розкрита атака
+outpost	форпост
+file / rank / diagonal	вертикаль / горизонталь / діагональ	«the c-file» - вертикаль c; «the long diagonal» - довга діагональ
+open file / half-open file	відкрита вертикаль / напіввідкрита вертикаль
+exchange (a trade)	розмін
+the exchange (rook for minor piece)	якість	«win the exchange» - виграти якість
+sacrifice	жертва
+initiative	ініціатива
+attack / defence	атака / захист
+pawn structure	пішакова структура
+pawn chain	пішаковий ланцюг
+isolated / doubled / backward / passed pawn	ізольований / здвоєний / відсталий / прохідний пішак
+pawn storm	пішаковий штурм
+minority attack	атака меншості
+pawn break	підрив
+light-squared / dark-squared bishop	білопольний / чорнопольний слон
+bishop pair	пара слонів
+good / bad bishop	добрий / поганий слон
+weakness / weak square / hole	слабкість / слабке поле / дірка
+space	простір
+tension	напруження
+main line / sideline	головна лінія / побічне продовження
+variation / line	варіант / продовження
+move order / transposition / to transpose	порядок ходів / перестановка ходів / переходити (у)
+theory	теорія
+trap	пастка
+blunder / mistake / inaccuracy	груба помилка / помилка / неточність
+check / checkmate / stalemate	шах / мат / пат
+opening / middlegame / endgame	дебют / мітельшпіль / ендшпіль
+advantage / equality	перевага / рівність
+counterplay	контргра
+Sicilian Defence	Сицилійський захист
+French Defence	Французький захист
+Caro-Kann Defence	захист Каро-Канн
+Ruy Lopez / Spanish Game	Іспанська партія
+Italian Game	Італійська партія
+King's Gambit / Queen's Gambit	Королівський гамбіт / Ферзевий гамбіт
+Scotch Game	Шотландська партія
+Two Knights Defence	захист двох коней
+English Opening	Англійський початок
+King's Indian Defence	Староіндійський захист
+Nimzo-Indian Defence	захист Німцовича
+Grünfeld Defence	захист Грюнфельда
+Slav Defence	Словʼянський захист
+Dutch Defence	Голландський захист
+Pirc Defence	захист Пірца
+Alekhine's Defence	захист Альохіна
+Scandinavian Defence	Скандинавський захист
+Petrov's Defence	захист Петрова	
+Vienna Game	Віденська партія
+Evans Gambit	гамбіт Еванса
+Grand Prix Attack	атака Гран-прі
+Max Lange Attack	атака Макса Ланге
+Nimzowitsch-Larsen Attack	атака Німцовича-Ларсена	
+Queen's Indian Defence	Новоіндійський захист	
+Bogo-Indian Defence	захист Боголюбова	
+Old Indian Defence	Давньоіндійський захист	
+King's Indian Attack	Староіндійська атака	
+Modern Defence	Сучасний захист	
+Benoni Defence	захист Бенуні	Old Benoni - старий Бенуні
+Catalan Opening	Каталонський початок	
+London System	Лондонська система	
+Colle System	система Колле	
+Bishop's Opening	дебют слона	
+Stonewall	Стоунвол	
+Maróczy Bind	скріпа Мароці	
+Smith-Morra Gambit	гамбіт Сміта-Морра	
+Najdorf / Dragon / Scheveningen Variation	варіант Найдорфа / варіант Дракона / Шевенінгенський варіант	
+Blackmar-Diemer Gambit	гамбіт Блекмара-Димера	
+Englund Gambit	гамбіт Енглунда	
+Budapest Gambit	Будапештський гамбіт	
+Benko Gambit	гамбіт Бенко	
+Leningrad (Dutch)	Ленінградський варіант	
+Exchange Variation	розмінний варіант	
+Advance Variation	варіант просування	
+Closed / Open (variation)	закритий / відкритий (варіант)	
+Halloween Gambit	гамбіт Гелловін	
+Giuoco Piano / Pianissimo	Джуоко піано / Джуоко піаніссімо	
+Winawer Variation	варіант Вінавера	
+engine	рушій	

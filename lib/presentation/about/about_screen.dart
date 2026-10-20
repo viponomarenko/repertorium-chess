@@ -11,6 +11,9 @@ import '../theme/app_icons.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/common.dart';
 
+const kWikibooksUrl = 'https://en.wikibooks.org/wiki/Chess_Opening_Theory';
+const kOpeningNamesUrl = 'https://github.com/lichess-org/chess-openings';
+
 /// Third-party components shown on the About screen (full list: NOTICE).
 const kComponents = <(String, String, String)>[
   ('Stockfish 19 / Light (multistockfish)', 'GPL-3.0', 'https://stockfishchess.org'),
@@ -23,7 +26,6 @@ const kComponents = <(String, String, String)>[
   ('Piece set: rhosgfx', 'CC0-1.0', 'https://github.com/lichess-org/lila/blob/master/COPYING.md'),
   ('Piece set: firi', 'CC BY 4.0', 'https://github.com/lichess-org/lila/blob/master/COPYING.md'),
   ('Piece set: shapes', 'CC BY-SA 4.0', 'https://github.com/lichess-org/lila/blob/master/COPYING.md'),
-  ('Opening names (lichess-org/chess-openings)', 'CC0-1.0', 'https://github.com/lichess-org/chess-openings'),
   ('FSRS algorithm (own implementation)', 'MIT (reference)', 'https://github.com/open-spaced-repetition'),
   ('Icons: Bootstrap Icons (bootstrap_icons package)', 'MIT', 'https://icons.getbootstrap.com'),
   ('Move and capture sounds: Impact Sounds by Kenney', 'CC0 1.0', 'https://kenney.nl/assets/impact-sounds'),
@@ -55,7 +57,7 @@ class AboutScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final version = ref.watch(appVersionProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(l.aboutTitle)),
+      appBar: PageBar(bar: AppBar(title: Text(l.aboutTitle))),
       body: ListView(
         padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.listBottom).inPage(context),
         children: [
@@ -89,6 +91,22 @@ class AboutScreen extends ConsumerWidget {
                 title: Text(l.allLicenses),
                 onTap: () =>
                     showLicensePage(context: context, applicationName: AppInfo.name, applicationVersion: version),
+              ),
+            ],
+          ),
+          // Where the app's texts and names come from (D-106).
+          SectionHeader(l.dataSources),
+          SettingsGroup(
+            children: [
+              ListTile(
+                title: Text(l.sourceOpeningTexts),
+                subtitle: Text(l.sourceOpeningTextsLicense),
+                onTap: () => launchUrl(Uri.parse(kWikibooksUrl), mode: LaunchMode.externalApplication),
+              ),
+              ListTile(
+                title: Text(l.sourceOpeningNames),
+                subtitle: const Text('CC0-1.0'),
+                onTap: () => launchUrl(Uri.parse(kOpeningNamesUrl), mode: LaunchMode.externalApplication),
               ),
             ],
           ),

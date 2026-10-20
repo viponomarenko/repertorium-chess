@@ -261,7 +261,7 @@ class _ImportWizardScreenState extends ConsumerState<ImportWizardScreen> {
         if (ok && context.mounted) context.pop();
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(_working == null ? l.addToRepertoire : l.resolveConflicts)),
+        appBar: PageBar(bar: AppBar(title: Text(_working == null ? l.addToRepertoire : l.resolveConflicts))),
         body: _working == null ? _optionsView(context) : _conflictsView(context),
         bottomNavigationBar: _working == null ? _bottomBar(context) : null,
       ),

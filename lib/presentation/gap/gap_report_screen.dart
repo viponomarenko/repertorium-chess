@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartchess/dartchess.dart' hide PgnComment;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,11 +9,14 @@ import 'package:intl/intl.dart';
 import '../../core/l10n.dart';
 import '../../data/repositories/repertoire_repository.dart';
 import '../../data/sync/gap_service.dart';
+import '../../domain/chess/chess_utils.dart';
 import '../../domain/gap/gap_analysis.dart';
+import '../../domain/stats/opening_tree.dart';
 import '../../domain/training/training_engine.dart';
 import '../accounts/accounts_providers.dart';
+import '../accounts/game_meta.dart';
+import '../accounts/imported_game_args.dart';
 import '../app/providers.dart';
-import '../game/game_screen.dart';
 import '../repertoire/create_repertoire_dialog.dart';
 import '../stats/my_openings_providers.dart';
 import '../theme/app_icons.dart';
@@ -39,9 +44,42 @@ class _Group {
   final int ply;
   final List<GapRow> rows = [];
 
-  /// The user's very first move differs from the repertoire: another
-  /// opening altogether, not a forgotten move (1.b3 against a 1.e4 one).
-  bool get otherOpening => type == GapType.userDeviation && ply <= 2;
+  /// White's very first move differs from the repertoire: perhaps another
+  /// opening altogether (1.b3 against a 1.e4 one), so a new repertoire is
+  /// offered too. Black's first move answers the opponent's: the
+  /// repertoire has an answer there, it is an ordinary deviation (D-099).
+  bool get firstMove => type == GapType.userDeviation && ply == 1;
+
+  /// The moves of the first game up to and with the move in question
+  /// ("1. e4 Nc6").
+  late final String line = lineUpTo(rows.first.game.pgn, ply, fallback: playedSan);
+
+  /// The position after the move and the move itself: the cards differ
+  /// even when every move was the first one.
+  late final (String, Move?) after = () {
+    final pos = tryPositionFromFen(fen);
+    final m = pos == null ? null : parseUciMove(pos, playedUci);
+    return m == null ? (fen, null) : (pos!.play(m).fen, m);
+  }();
+}
+
+/// "1. e4 Nc6": the first [ply] moves of a game in SAN ([fallback] when
+/// the game does not start from the initial position).
+String lineUpTo(String pgn, int ply, {String fallback = ''}) {
+  final ucis = firstPlies(pgn, max: ply);
+  if (ucis.length < ply) return fallback;
+  Position pos = Chess.initial;
+  final sb = StringBuffer();
+  for (final (i, uci) in ucis.indexed) {
+    final m = parseUciMove(pos, uci);
+    if (m == null) return fallback;
+    final (next, san) = pos.makeSan(m);
+    if (sb.isNotEmpty) sb.write(' ');
+    if (i.isEven) sb.write('${i ~/ 2 + 1}. ');
+    sb.write(san);
+    pos = next;
+  }
+  return sb.toString();
 }
 
 /// Report "where my games left the repertoire" (F-GAP-02, F-GAP-03).
@@ -60,8 +98,33 @@ class _GapReportScreenState extends ConsumerState<GapReportScreen> {
   /// Line height of the two-line app bar title.
   static const double _titleLineHeight = 1.15;
 
-  int? _rep;
+  /// The repertoire shown (-1: all) and the period in days (0: all time).
+  int _rep = -1;
   int _days = 0;
+
+  /// A comparison started by the screen itself is running.
+  bool _running = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _autoCompare());
+  }
+
+  /// Games not compared yet (downloaded before, or the comparison failed)
+  /// are compared on opening: the report has no "Compare" step.
+  Future<void> _autoCompare() async {
+    final games = await ref.read(importedGamesProvider.future);
+    if (!mounted || games.isEmpty || games.every((g) => g.analyzedAt != null)) return;
+    setState(() => _running = true);
+    try {
+      await ref.read(gapServiceProvider).analyzeAll();
+    } catch (e) {
+      if (mounted) showSnack(context, friendlyError(e, context.l10n));
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
 
   List<_Group> _group(List<GapRow> rows) {
     final since = _days == 0 ? null : DateTime.now().subtract(Duration(days: _days));
@@ -69,7 +132,7 @@ class _GapReportScreenState extends ConsumerState<GapReportScreen> {
     for (final r in rows) {
       final e = r.event;
       final type = GapType.fromName(e.type);
-      if (_rep != null && r.repertoireId != _rep) continue;
+      if (_rep != -1 && r.repertoireId != _rep) continue;
       if (since != null && r.game.playedAt.isBefore(since)) continue;
       final k = '${r.repertoireId}|${e.type}|${e.positionKey}|${e.playedUci}';
       map
@@ -115,6 +178,18 @@ class _GapReportScreenState extends ConsumerState<GapReportScreen> {
         actions: [FilledButton(onPressed: _toGames, child: Text(l.myGames))],
       );
     }
+    if (_running) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const InlineSpinner(),
+            AppGap.v12,
+            Text(l.analyzingGames, style: context.tt.meta),
+          ],
+        ),
+      );
+    }
     if (summary == null && games.every((g) => g.analyzedAt == null)) {
       return EmptyState(
         icon: AppIcons.gaps,
@@ -143,27 +218,29 @@ class _GapReportScreenState extends ConsumerState<GapReportScreen> {
     return Scaffold(
       appBar: widget.embedded
           ? null
-          : AppBar(
-              // Long in Ukrainian: two lines instead of "Мої партії та реп…".
-              title: Text(
-                l.gapsTitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(height: _titleLineHeight),
+          : PageBar(
+              bar: AppBar(
+                // Long in Ukrainian: two lines instead of "Мої партії та реп…".
+                title: Text(
+                  l.gapsTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(height: _titleLineHeight),
+                ),
+                actions: [
+                  IconButton(
+                    tooltip: l.myOpeningsTitle,
+                    onPressed: () => context.push('/my-openings'),
+                    icon: const Icon(AppIcons.myOpenings),
+                  ),
+                  IconButton(
+                    tooltip: l.myGames,
+                    onPressed: () => context.push('/my-games'),
+                    icon: const Icon(AppIcons.myGames),
+                  ),
+                  IconButton(tooltip: l.reanalyze, onPressed: _rerun, icon: const Icon(AppIcons.refresh)),
+                ],
               ),
-              actions: [
-                IconButton(
-                  tooltip: l.myOpeningsTitle,
-                  onPressed: () => context.push('/my-openings'),
-                  icon: const Icon(AppIcons.myOpenings),
-                ),
-                IconButton(
-                  tooltip: l.myGames,
-                  onPressed: () => context.push('/my-games'),
-                  icon: const Icon(AppIcons.myGames),
-                ),
-                IconButton(tooltip: l.reanalyze, onPressed: _rerun, icon: const Icon(AppIcons.refresh)),
-              ],
             ),
       body: rows.when(
         loading: () => const LoadingView(),
@@ -172,51 +249,48 @@ class _GapReportScreenState extends ConsumerState<GapReportScreen> {
         data: (all) {
           if (all.isEmpty) return _empty(context);
           final groups = _group(all);
+          final habit = _habit(groups, reps);
           return ListView(
             padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
             children: [
+              if (_running) const LinearProgressIndicator(),
               Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.page, top: AppSpacing.sm, right: AppSpacing.page),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.page, AppSpacing.xs, AppSpacing.sm, 0),
                 child: Row(
                   children: [
                     Expanded(
-                      child: DropdownButton<int?>(
-                        icon: const Icon(AppIcons.expand, size: AppSizes.iconMd),
-                        isExpanded: true,
-                        value: _rep,
-                        items: [
-                          DropdownMenuItem(value: null, child: Text(l.allRepertoires)),
-                          for (final r in reps)
-                            DropdownMenuItem(
-                              value: r.row.id,
-                              child: Text(r.row.name, overflow: TextOverflow.ellipsis),
-                            ),
+                      child: Wrap(
+                        spacing: AppSpacing.sm,
+                        children: [
+                          FilterPill<int>(
+                            label: reps.where((r) => r.row.id == _rep).firstOrNull?.row.name ?? l.allRepertoires,
+                            items: [(-1, l.allRepertoires), for (final r in reps) (r.row.id, r.row.name)],
+                            onSelected: (v) => setState(() => _rep = v),
+                          ),
+                          FilterPill<int>(
+                            label: _days == 0 ? l.allTime : l.lastDays(_days),
+                            items: [(0, l.allTime), (30, l.lastDays(30)), (90, l.lastDays(90)), (365, l.lastDays(365))],
+                            onSelected: (v) => setState(() => _days = v),
+                          ),
                         ],
-                        onChanged: (v) => setState(() => _rep = v),
                       ),
-                    ),
-                    AppGap.h12,
-                    DropdownButton<int>(
-                      icon: const Icon(AppIcons.expand, size: AppSizes.iconMd),
-                      value: _days,
-                      items: [
-                        DropdownMenuItem(value: 0, child: Text(l.allTime)),
-                        DropdownMenuItem(value: 30, child: Text(l.lastDays(30))),
-                        DropdownMenuItem(value: 90, child: Text(l.lastDays(90))),
-                        DropdownMenuItem(value: 365, child: Text(l.lastDays(365))),
-                      ],
-                      onChanged: (v) => setState(() => _days = v ?? 0),
                     ),
                     IconButton(tooltip: l.reanalyze, onPressed: _rerun, icon: const Icon(AppIcons.refresh)),
                   ],
                 ),
               ),
               if (groups.isEmpty) EmptyState(icon: AppIcons.search, title: l.nothingFound),
+              // What the user plays instead of the repertoire most of the
+              // time comes first, on its own (D-099).
+              if (habit != null) ...[
+                AppGap.v8,
+                _GroupCard(group: habit.$1, repName: _repName(habit.$1, reps), share: (habit.$2, habit.$3)),
+              ],
               // Sections by what happened and what to do about it (D-069);
-              // the two that are not mistakes stay folded.
+              // a line that ended is not a mistake and stays folded.
               ..._section(l.gapSectionForgot, [
                 for (final g in groups)
-                  if (g.type == GapType.userDeviation && !g.otherOpening) g,
+                  if (g.type == GapType.userDeviation && g != habit?.$1) g,
               ], reps),
               ..._section(l.gapSectionNovelty, [
                 for (final g in groups)
@@ -231,21 +305,35 @@ class _GapReportScreenState extends ConsumerState<GapReportScreen> {
                 reps,
                 folded: true,
               ),
-              ..._section(
-                l.gapSectionOther,
-                [
-                  for (final g in groups)
-                    if (g.otherOpening) g,
-                ],
-                reps,
-                folded: true,
-              ),
             ],
           );
         },
       ),
     );
   }
+
+  /// The repertoire's name on a card, when there is more than one.
+  String? _repName(_Group g, List<RepertoireSummary> reps) =>
+      reps.length < 2 ? null : reps.where((r) => r.row.id == g.repertoireId).firstOrNull?.row.name;
+
+  /// The most frequent deviation when it is a habit rather than a slip: at
+  /// least 5 games and a quarter of the games of that colour. With the
+  /// games of that colour in the period.
+  (_Group, int, Side)? _habit(List<_Group> groups, List<RepertoireSummary> reps) {
+    final top = groups.where((g) => g.type == GapType.userDeviation).firstOrNull;
+    if (top == null || top.rows.length < _habitMinGames) return null;
+    final side =
+        reps.where((r) => r.row.id == top.repertoireId).firstOrNull?.color ??
+        (top.rows.first.game.userColor == 'black' ? Side.black : Side.white);
+    final since = _days == 0 ? null : DateTime.now().subtract(Duration(days: _days));
+    final games = ref.watch(importedGamesProvider).value ?? const [];
+    final total = games.where((g) => g.userColor == side.name && (since == null || !g.playedAt.isBefore(since))).length;
+    if (total == 0 || top.rows.length < total * _habitShare) return null;
+    return (top, total, side);
+  }
+
+  static const int _habitMinGames = 5;
+  static const double _habitShare = 0.25;
 }
 
 extension on _GapReportScreenState {
@@ -253,10 +341,7 @@ extension on _GapReportScreenState {
     if (groups.isEmpty) return const [];
     final games = groups.fold<int>(0, (a, g) => a + g.rows.length);
     final cards = [
-      for (final (i, g) in groups.indexed) ...[
-        if (i > 0) AppGap.v12,
-        _GroupCard(group: g, repName: reps.where((r) => r.row.id == g.repertoireId).firstOrNull?.row.name ?? ''),
-      ],
+      for (final (i, g) in groups.indexed) ...[if (i > 0) AppGap.v12, _GroupCard(group: g, repName: _repName(g, reps))],
     ];
     final l = context.l10n;
     if (!folded) return [SectionHeader('$title · ${l.gamesCountShort(games)}'), ...cards];
@@ -276,12 +361,55 @@ String gapTypeName(GapType t, AppLocalizations l) => switch (t) {
 };
 
 class _GroupCard extends ConsumerWidget {
-  const _GroupCard({required this.group, required this.repName});
+  const _GroupCard({required this.group, required this.repName, this.share});
   final _Group group;
-  final String repName;
+
+  /// Shown when the user has more than one repertoire.
+  final String? repName;
+
+  /// The habit card on top: games of the colour and the colour.
+  final (int, Side)? share;
 
   /// Side of the position's board in a card.
-  static const double _boardSize = 120;
+  static const double _boardSize = 88;
+
+  Future<void> _train(BuildContext context, WidgetRef ref) async {
+    final g = group;
+    final learned = await ref.read(repertoireRepositoryProvider).markAgain(g.repertoireId, g.key);
+    if (!context.mounted) return;
+    await context.push(
+      '/train',
+      // A move that was never learned is shown first (Learn from this
+      // position), not quizzed.
+      extra: learned
+          ? TrainingArgs(
+              repertoireIds: [g.repertoireId],
+              mode: TrainingMode.problems,
+              problemKeys: {
+                g.repertoireId: [g.key],
+              },
+            )
+          : TrainingArgs(repertoireIds: [g.repertoireId], mode: TrainingMode.learn, startKey: g.key),
+    );
+  }
+
+  /// Opens the repertoire at the position and plays [uci] there, which
+  /// adds it: the user's own move, or the opponent's to answer.
+  void _build(BuildContext context) =>
+      context.push('/build/${group.repertoireId}?key=${Uri.encodeQueryComponent(group.key)}&play=${group.playedUci}');
+
+  Future<void> _hide(BuildContext context, WidgetRef ref) async {
+    final l = context.l10n;
+    final svc = ref.read(gapServiceProvider);
+    final ids = [for (final r in group.rows) r.event.id];
+    await svc.dismiss(ids);
+    if (!context.mounted) return;
+    showSnack(
+      context,
+      l.gapDismissed,
+      action: SnackBarAction(label: l.undo, onPressed: () => svc.dismiss(ids, dismissed: false)),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -295,19 +423,46 @@ class _GroupCard extends ConsumerWidget {
       GapType.opponentNovelty => (AppIcons.help, Tone.warning),
       GapType.endOfBook => (AppIcons.flag, Tone.neutral),
     };
-    final first = g.rows.first;
+    final (afterFen, move) = g.after;
+    final habit = share;
+    final count = g.rows.length;
+    final deviation = g.type == GapType.userDeviation;
+    final menu = AppMenuButton<String>(
+      icon: const Icon(AppIcons.more),
+      tooltip: l.more,
+      onSelected: (v) {
+        switch (v) {
+          case 'add':
+            _build(context);
+          case 'create':
+            unawaited(showCreateRepertoire(context, openEditor: true));
+          case 'games':
+            _showGames(context, ref);
+          default:
+            unawaited(_hide(context, ref));
+        }
+      },
+      itemBuilder: (_) => [
+        if (deviation && habit == null) appMenuItem(value: 'add', label: l.gapAddMyMove(g.playedSan)),
+        if (g.firstMove) appMenuItem(value: 'create', label: l.createRepertoire),
+        if (habit != null) appMenuItem(value: 'games', label: l.gamesN(count)),
+        appMenuItem(value: 'hide', label: l.dismiss),
+      ],
+    );
     return Padding(
       padding: AppInsets.pageH,
       child: SectionCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (habit != null) ...[Text(l.gapHabitTitle, style: tt.title), AppGap.v12],
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 MiniBoard(
-                  fen: g.fen,
-                  orientation: rep?.color ?? (first.game.userColor == 'black' ? Side.black : Side.white),
+                  fen: afterFen,
+                  lastMove: move,
+                  orientation: rep?.color ?? (g.rows.first.game.userColor == 'black' ? Side.black : Side.white),
                   size: _boardSize,
                 ),
                 AppGap.h12,
@@ -315,89 +470,70 @@ class _GroupCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      StatusLine(
-                        icon: icon,
-                        text: g.otherOpening ? l.gapOtherOpening : gapTypeName(g.type, l),
-                        tone: tone,
-                        strong: true,
-                      ),
-                      AppGap.v4,
-                      Text(repName, style: tt.meta),
+                      if (habit == null) StatusLine(icon: icon, text: gapTypeName(g.type, l), tone: tone),
+                      MovesText(g.line, style: tt.title, maxLines: 2, overflow: TextOverflow.ellipsis),
                       AppGap.v4,
                       MovesText(switch (g.type) {
-                        GapType.userDeviation when g.otherOpening => l.gapOtherText(g.playedSan),
-                        GapType.userDeviation => l.gapUserText(g.playedSan, g.expectedSan),
-                        GapType.opponentNovelty => l.gapOpponentText(g.playedSan),
-                        GapType.endOfBook => l.gapEndText(g.playedSan),
+                        GapType.userDeviation => l.gapExpected(g.expectedSan),
+                        GapType.opponentNovelty => l.gapNotInRepertoire,
+                        GapType.endOfBook => l.gapLineEnded,
                       }),
                       AppGap.v4,
-                      Text(l.happenedInGames(g.rows.length), style: tt.title),
+                      Text(
+                        [
+                          if (habit != null)
+                            l.gapHabitShare(
+                              count,
+                              habit.$1,
+                              habit.$2 == Side.white ? l.inSentenceAsWhite : l.inSentenceAsBlack,
+                            )
+                          else
+                            l.gamesCountShort(count),
+                          ?repName,
+                        ].join(' · '),
+                        style: tt.meta,
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
             AppGap.v8,
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
+            Row(
               children: [
-                if (g.otherOpening)
-                  FilledButton.tonalIcon(
-                    onPressed: () => showCreateRepertoire(context, openEditor: true),
-                    icon: const Icon(AppIcons.add),
-                    label: Text(l.createRepertoire),
-                  )
-                else if (g.type == GapType.userDeviation)
-                  FilledButton.tonalIcon(
-                    onPressed: () async {
-                      final learned = await ref.read(repertoireRepositoryProvider).markAgain(g.repertoireId, g.key);
-                      if (!context.mounted) return;
-                      await context.push(
-                        '/train',
-                        // A move that was never learned is shown first
-                        // (Learn from this position), not quizzed.
-                        extra: learned
-                            ? TrainingArgs(
-                                repertoireIds: [g.repertoireId],
-                                mode: TrainingMode.problems,
-                                problemKeys: {
-                                  g.repertoireId: [g.key],
-                                },
-                              )
-                            : TrainingArgs(repertoireIds: [g.repertoireId], mode: TrainingMode.learn, startKey: g.key),
-                      );
-                    },
-                    icon: const Icon(AppIcons.drill),
-                    label: Text(l.trainThisPosition),
-                  )
-                else
-                  FilledButton.tonalIcon(
-                    onPressed: () => context.push(
-                      '/build/${g.repertoireId}?key=${Uri.encodeQueryComponent(g.key)}&play=${g.playedUci}',
-                    ),
-                    icon: const Icon(AppIcons.add),
-                    label: Text(g.type == GapType.opponentNovelty ? l.prepareAnswer : l.extendLine),
+                Expanded(
+                  child: Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      if (deviation)
+                        FilledButton.tonal(
+                          style: AppButtonSize.compact,
+                          onPressed: () => _train(context, ref),
+                          child: MovesText(l.gapLearnMove(g.expectedSan)),
+                        )
+                      else
+                        FilledButton.tonal(
+                          style: AppButtonSize.compact,
+                          onPressed: () => _build(context),
+                          child: Text(g.type == GapType.opponentNovelty ? l.prepareAnswer : l.extendLine),
+                        ),
+                      if (habit != null)
+                        OutlinedButton(
+                          style: AppButtonSize.compact,
+                          onPressed: () => _build(context),
+                          child: MovesText(l.gapAddMove(g.playedSan)),
+                        )
+                      else
+                        OutlinedButton(
+                          style: AppButtonSize.compact,
+                          onPressed: () => _showGames(context, ref),
+                          child: Text(l.gamesN(count)),
+                        ),
+                    ],
                   ),
-                OutlinedButton.icon(
-                  onPressed: () => _showGames(context),
-                  icon: const Icon(AppIcons.list),
-                  label: Text(l.gamesN(g.rows.length)),
                 ),
-                TextButton(
-                  onPressed: () async {
-                    final svc = ref.read(gapServiceProvider);
-                    final ids = [for (final r in g.rows) r.event.id];
-                    await svc.dismiss(ids);
-                    if (!context.mounted) return;
-                    showSnack(
-                      context,
-                      l.gapDismissed,
-                      action: SnackBarAction(label: l.undo, onPressed: () => svc.dismiss(ids, dismissed: false)),
-                    );
-                  },
-                  child: Text(l.dismiss),
-                ),
+                menu,
               ],
             ),
           ],
@@ -406,7 +542,7 @@ class _GroupCard extends ConsumerWidget {
     );
   }
 
-  void _showGames(BuildContext context) {
+  void _showGames(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final df = DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag());
     showAppSheet<void>(
@@ -425,7 +561,13 @@ class _GroupCard extends ConsumerWidget {
                 Navigator.pop(ctx);
                 context.push(
                   '/analysis',
-                  extra: GameScreenArgs(pgn: r.game.pgn, initialPath: List.filled(r.event.ply - 1, 0)),
+                  extra: importedGameArgs(
+                    context,
+                    r.game,
+                    meta: ref.read(gameMetaProvider).value?[r.game.id],
+                    exit: (r.event.ply, r.event.playedSan),
+                    order: [for (final x in group.rows) x.game.id],
+                  ),
                 );
               },
             ),

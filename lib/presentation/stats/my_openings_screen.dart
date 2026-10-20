@@ -34,6 +34,9 @@ const _moveColumn = 92.0;
 const _shareColumn = 44.0;
 const _gamesColumn = 36.0;
 
+/// The "+12 =3 −9" after a variation's score bar.
+const _scoreColumn = 76.0;
+
 /// The list of games takes at most this share of the screen height.
 const _gamesSheetShare = 0.7;
 
@@ -181,21 +184,23 @@ class _MyOpeningsScreenState extends ConsumerState<MyOpeningsScreen> with Single
     return Scaffold(
       appBar: widget.embedded
           ? null
-          : AppBar(
-              title: Text(l.myOpeningsTitle),
-              actions: [
-                IconButton(
-                  tooltip: l.myGames,
-                  onPressed: () => context.push('/my-games'),
-                  icon: const Icon(AppIcons.download),
-                ),
-              ],
-              bottom: TabBar(
-                controller: _tabs,
-                tabs: [
-                  Tab(text: l.tabVariations),
-                  Tab(text: l.tabTree),
+          : PageBar(
+              bar: AppBar(
+                title: Text(l.myOpeningsTitle),
+                actions: [
+                  IconButton(
+                    tooltip: l.myGames,
+                    onPressed: () => context.push('/my-games'),
+                    icon: const Icon(AppIcons.download),
+                  ),
                 ],
+                bottom: TabBar(
+                  controller: _tabs,
+                  tabs: [
+                    Tab(text: l.tabVariations),
+                    Tab(text: l.tabTree),
+                  ],
+                ),
               ),
             ),
       body: Column(
@@ -308,9 +313,27 @@ class _MyOpeningsScreenState extends ConsumerState<MyOpeningsScreen> with Single
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page, vertical: AppSpacing.xs),
           child: Text(l.gamesCount(t.totalGames), style: context.tt.meta),
         ),
-        for (final v in list) _VariationRow(v: v, total: t.totalGames, graph: graph, onTap: () => _openInTree(v.ucis)),
+        // The same way out of the repertoire is spelled out once, on its
+        // most frequent line; the lines after it keep only the mark.
+        for (final (v, repeat) in _withRepeats(list, graph))
+          _VariationRow(v: v, total: t.totalGames, graph: graph, repeatFit: repeat, onTap: () => _openInTree(v.ucis)),
       ],
     );
+  }
+
+  /// Each variation with whether its way out of the repertoire (who left
+  /// it and with what move after which moves) was shown on a line above.
+  List<(VariationStat, bool)> _withRepeats(List<VariationStat> list, RepertoireGraph? graph) {
+    final seen = <String>{};
+    return [
+      for (final v in list)
+        if (graph == null)
+          (v, false)
+        else if (fitRepertoire(graph, v.ucis) case final f when !f.inBook && f.leftAtPly != null)
+          (v, !seen.add('${f.userLeft}|${v.ucis.take(f.leftAtPly!).join(' ')}'))
+        else
+          (v, false),
+    ];
   }
 
   // ------------------------------------------------------------ tree
@@ -460,11 +483,21 @@ enum _Marker { inBook, userLeft, gap }
 /// One frequent variation: the moves, how often, how it scores, and how it
 /// relates to the repertoire.
 class _VariationRow extends StatelessWidget {
-  const _VariationRow({required this.v, required this.total, required this.graph, required this.onTap});
+  const _VariationRow({
+    required this.v,
+    required this.total,
+    required this.graph,
+    required this.onTap,
+    this.repeatFit = false,
+  });
   final VariationStat v;
   final int total;
   final RepertoireGraph? graph;
   final VoidCallback onTap;
+
+  /// A line above already says where this one leaves the repertoire: only
+  /// the mark is shown, with the words for a screen reader and a long press.
+  final bool repeatFit;
 
   @override
   Widget build(BuildContext context) {
@@ -474,6 +507,7 @@ class _VariationRow extends StatelessWidget {
     final small = context.tt.meta;
     final fit = graph == null ? null : fitRepertoire(graph!, v.ucis);
     Widget? fitLine;
+    Widget? fitMark;
     if (fit != null) {
       final (icon, color, text) = fit.inBook
           ? (AppIcons.okFilled, cs.success, l.fitInBook)
@@ -484,22 +518,32 @@ class _VariationRow extends StatelessWidget {
                   ? (AppIcons.error, cs.error, l.fitUserLeft(move))
                   : (AppIcons.help, cs.warning, l.fitOpponentLeft(move));
             }();
-      // A [StatusLine] whose words may hold a move: the notation setting
-      // applies to it.
-      fitLine = Row(
-        children: [
-          Icon(icon, size: AppSizes.iconSm, color: color),
-          AppGap.h4,
-          Expanded(
-            child: MovesText(
-              text,
-              style: small.copyWith(color: color),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+      if (repeatFit) {
+        fitMark = Tooltip(
+          message: text,
+          child: Semantics(
+            label: text,
+            child: Icon(icon, size: AppSizes.iconSm, color: color),
           ),
-        ],
-      );
+        );
+      } else {
+        // A [StatusLine] whose words may hold a move: the notation setting
+        // applies to it.
+        fitLine = Row(
+          children: [
+            Icon(icon, size: AppSizes.iconSm, color: color),
+            AppGap.h4,
+            Expanded(
+              child: MovesText(
+                text,
+                style: small.copyWith(color: color),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        );
+      }
     }
     return InkWell(
       onTap: onTap,
@@ -512,6 +556,13 @@ class _VariationRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: MoveLineText(_lineText(v.sans))),
+                if (fitMark != null) ...[
+                  AppGap.h8,
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                    child: fitMark,
+                  ),
+                ],
                 AppGap.h8,
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -523,7 +574,23 @@ class _VariationRow extends StatelessWidget {
               ],
             ),
             AppGap.v4,
-            ScoreBar(score: v.score),
+            // The bar with its numbers: the shares alone did not say how
+            // many games were won, drawn and lost.
+            Row(
+              children: [
+                Expanded(child: ScoreBar(score: v.score)),
+                AppGap.h8,
+                // One width for every row, so the bars line up.
+                SizedBox(
+                  width: MediaQuery.textScalerOf(context).scale(_scoreColumn),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(l.scoreLine(v.score.wins, v.score.draws, v.score.losses), style: small.tabular),
+                  ),
+                ),
+              ],
+            ),
             if (fitLine != null) ...[AppGap.v4, fitLine],
           ],
         ),

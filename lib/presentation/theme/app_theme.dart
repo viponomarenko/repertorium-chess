@@ -353,6 +353,10 @@ extension TabiyaColors on ColorScheme {
   /// The track of a day ring that is not full yet.
   Color get flameTrack => brightness == Brightness.light ? const Color(0xFFF6CDB3) : const Color(0xFF5A3520);
 
+  /// A destructive action on the inverse surface (the dark selection bar):
+  /// the error colour of the other theme, which reads on that ground.
+  Color get errorOnInverse => brightness == Brightness.light ? AppTheme._dark.error : AppTheme._light.error;
+
   // Chess meanings (D-075). The two sides look the same in both themes:
   // they stand for the pieces, not for the interface.
 
@@ -384,6 +388,10 @@ abstract final class BoardColors {
   static const red = Color(0xAA882020);
   static const blue = Color(0xAA003088);
   static const yellow = Color(0xAAE68F00);
+
+  /// The squares of the last move: a warm yellow, so that the green of
+  /// the repertoire's arrow stays the only green on the board (D-118).
+  static const lastMove = Color(0x66F5D547);
 
   /// The move of the repertoire, the answer shown in training.
   static const mainMove = green;

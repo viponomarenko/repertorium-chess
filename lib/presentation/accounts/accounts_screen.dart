@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/l10n.dart';
 import '../../data/db/database.dart';
+import '../stats/my_openings_providers.dart';
 import '../theme/app_icons.dart';
 import '../widgets/common.dart';
 import '../widgets/errors.dart';
@@ -33,7 +36,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     setState(() => _busy = true);
     try {
       final acc = await ref.read(accountsServiceProvider).connectLichess();
-      if (mounted) showSnack(context, l.connectedAs(acc.username));
+      if (!mounted) return;
+      showSnack(context, l.connectedAs(acc.username));
+      // The games are what an account is for: they start coming at once.
+      unawaited(context.push('/my-games?download=lichess'));
     } on PlatformException catch (e) {
       // Closing the system sign-in sheet is not an error. AppAuth reports
       // it as code -3 of its "general" domain, in the system language.
@@ -56,24 +62,61 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
 
   Future<void> _disconnectLichess() async {
     final l = context.l10n;
-    final ok = await confirm(
-      context,
-      title: l.disconnectQ('Lichess'),
-      message: l.disconnectLichessMessage,
-      confirmLabel: l.disconnect,
-      destructive: true,
-    );
-    if (!ok || !mounted || _busy) return;
+    final choice = await _confirmDisconnect('Lichess', l.disconnectLichessMessage, 'lichess');
+    if (choice == null || !mounted || _busy) return;
     // Revoking the token is a network call: no second tap meanwhile.
     setState(() => _busy = true);
     try {
       await ref.read(accountsServiceProvider).disconnectLichess();
+      if (choice) await ref.read(accountsServiceProvider).deleteImportedGames(provider: 'lichess');
     } finally {
       if (mounted) {
         setState(() => _busy = false);
         ref.invalidate(lichessLoggedInProvider);
       }
     }
+  }
+
+  /// Asks before disconnecting [service]; the downloaded games stay unless
+  /// the user ticks them away. Null: cancelled; true: delete the games too.
+  Future<bool?> _confirmDisconnect(String service, String message, String provider) {
+    final l = context.l10n;
+    final games = (ref.read(importedGamesProvider).value ?? const []).where((g) => g.provider == provider).length;
+    var delete = false;
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) => AlertDialog(
+          title: Text(l.disconnectQ(service)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message),
+              if (games > 0)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: delete,
+                  title: Text(l.deleteDownloadedGames(games)),
+                  onChanged: (v) => set(() => delete = v ?? false),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.cancel)),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error,
+                foregroundColor: Theme.of(ctx).colorScheme.onError,
+              ),
+              onPressed: () => Navigator.pop(ctx, delete),
+              child: Text(l.disconnect),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _connectChessCom() async {
@@ -85,6 +128,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       final p = await ref.read(accountsServiceProvider).connectChessCom(name);
       if (!mounted) return;
       showSnack(context, p == null ? l.chessComNotFound(name) : l.connectedAs(p.username));
+      // The games are what an account is for: they start coming at once.
+      if (p != null) unawaited(context.push('/my-games?download=chesscom'));
     } catch (e) {
       if (mounted) showSnack(context, l.downloadFailed(friendlyError(e, l)));
     } finally {
@@ -101,11 +146,12 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     final accounts = ref.watch(linkedAccountsProvider).value;
     final li = accountOf(accounts, 'lichess');
     final cc = accountOf(accounts, 'chesscom');
+    final ccGames = (ref.watch(importedGamesProvider).value ?? const []).where((g) => g.provider == 'chesscom').length;
     final loggedIn = ref.watch(lichessLoggedInProvider).value ?? false;
     final df = DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag()).add_Hm();
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.accountsTitle)),
+      appBar: PageBar(bar: AppBar(title: Text(l.accountsTitle))),
       body: AbsorbPointer(
         absorbing: _busy,
         child: AppPage(
@@ -188,12 +234,23 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     FilledButton(onPressed: _connectChessCom, child: Text(l.connect)),
                   ] else ...[
                     Text(l.connectedAs(cc.username), style: theme.textTheme.titleMedium),
-                    if (cc.lastSyncAt != null) Text(l.lastSync(df.format(cc.lastSyncAt!)), style: tt.meta),
+                    Text(
+                      [
+                        l.gamesCount(ccGames),
+                        if (cc.lastSyncAt != null) l.lastSync(df.format(cc.lastSyncAt!)),
+                      ].join(' · '),
+                      style: tt.meta,
+                    ),
                     AppGap.v12,
                     Wrap(
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.sm,
                       children: [
+                        FilledButton.tonalIcon(
+                          onPressed: () => context.push('/my-games?download=chesscom'),
+                          icon: const Icon(AppIcons.download),
+                          label: Text(l.updateNow),
+                        ),
                         OutlinedButton.icon(
                           onPressed: () => context.push('/my-games'),
                           icon: const Icon(AppIcons.myGames),
@@ -202,14 +259,15 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                         TextButton(
                           style: destructiveText,
                           onPressed: () async {
-                            final ok = await confirm(
-                              context,
-                              title: l.disconnectQ('Chess.com'),
-                              message: l.disconnectChessComMessage,
-                              confirmLabel: l.disconnect,
-                              destructive: true,
+                            final choice = await _confirmDisconnect(
+                              'Chess.com',
+                              l.disconnectChessComMessage,
+                              'chesscom',
                             );
-                            if (ok) await ref.read(accountsServiceProvider).disconnectChessCom();
+                            if (choice == null) return;
+                            final svc = ref.read(accountsServiceProvider);
+                            await svc.disconnectChessCom();
+                            if (choice) await svc.deleteImportedGames(provider: 'chesscom');
                           },
                           child: Text(l.disconnect),
                         ),

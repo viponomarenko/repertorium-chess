@@ -11,7 +11,7 @@ import '../theme/app_icons.dart';
 import '../widgets/common.dart';
 import 'training_args.dart';
 
-/// "Other modes": one of the four training modes over [reps], for those
+/// "Modes": one of the four training modes over [reps], for those
 /// who want something other than the daily session (D-065).
 Future<void> showModeSheet(BuildContext context, WidgetRef ref, {required List<RepertoireSummary> reps}) async {
   final l = context.l10n;
@@ -24,44 +24,55 @@ Future<void> showModeSheet(BuildContext context, WidgetRef ref, {required List<R
     for (final p in ref.read(problemCountProvider).value ?? const <ProblemPosition>[])
       if (ids.contains(p.repertoireId)) p,
   ];
-  final mode = await showAppSheet<TrainingMode>(
-    context,
-    builder: (ctx) => Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: const Icon(AppIcons.again),
-          title: Text(l.modeReview),
-          subtitle: Text(l.modeReviewHint(due)),
-          enabled: due > 0,
-          onTap: () => Navigator.pop(ctx, TrainingMode.review),
-        ),
-        ListTile(
-          leading: const Icon(AppIcons.warning),
-          title: Text(l.modeProblems),
-          subtitle: Text(l.modeProblemsHint(problems.length)),
-          enabled: problems.isNotEmpty,
-          onTap: () => Navigator.pop(ctx, TrainingMode.problems),
-        ),
-        ListTile(
-          leading: const Icon(AppIcons.learn),
-          title: Text(l.modeLearn),
-          subtitle: Text(
-            fresh > newLeft ? '${l.modeLearnHint(fresh)} · ${l.todayUpTo(newLeft)}' : l.modeLearnHint(fresh),
-          ),
-          // Not offered once today's limit of new moves is used up.
-          enabled: fresh > 0 && newLeft > 0,
-          onTap: () => Navigator.pop(ctx, TrainingMode.learn),
-        ),
-        ListTile(
-          leading: const Icon(AppIcons.drill),
-          title: Text(l.modeDrill),
-          subtitle: Text(l.modeDrillHint),
-          enabled: reps.any((r) => r.learned > 0),
-          onTap: () => Navigator.pop(ctx, TrainingMode.drill),
-        ),
-      ],
+  final modes = [
+    appMenuItem(
+      value: TrainingMode.review,
+      icon: AppIcons.again,
+      label: l.modeReview,
+      subtitle: l.modeReviewHint(due),
+      enabled: due > 0,
     ),
+    appMenuItem(
+      value: TrainingMode.problems,
+      icon: AppIcons.warning,
+      label: l.modeProblems,
+      subtitle: l.modeProblemsHint(problems.length),
+      enabled: problems.isNotEmpty,
+    ),
+    appMenuItem(
+      value: TrainingMode.learn,
+      icon: AppIcons.learn,
+      label: l.modeLearn,
+      subtitle: fresh > newLeft ? '${l.modeLearnHint(fresh)} · ${l.todayUpTo(newLeft)}' : l.modeLearnHint(fresh),
+      // Not offered once today's limit of new moves is used up.
+      enabled: fresh > 0 && newLeft > 0,
+    ),
+    appMenuItem(
+      value: TrainingMode.drill,
+      icon: AppIcons.drill,
+      label: l.modeDrill,
+      // Off, it says when it opens rather than what it does.
+      subtitle: reps.any((r) => r.learned > 0) ? l.modeDrillHint : l.modeDrillLocked,
+      enabled: reps.any((r) => r.learned > 0),
+    ),
+  ];
+  // The menu sheet of the app (D-114): what can be trained now first, the
+  // rest below it under its own caption, each saying why it is off.
+  final open = [
+    for (final m in modes)
+      if (m.enabled) m,
+  ];
+  final closed = [
+    for (final m in modes)
+      if (!m.enabled) m,
+  ];
+  final mode = await showAppMenu<TrainingMode>(
+    context,
+    title: l.modesTitle,
+    items: [
+      ...open,
+      if (closed.isNotEmpty) ...[appMenuDivider(l.modesUnavailable), ...closed],
+    ],
   );
   if (mode == null || !context.mounted) return;
   final byRep = <int, List<String>>{};

@@ -113,6 +113,8 @@ class EnginePanel extends ConsumerStatefulWidget {
     this.onAddLine,
     this.onBestMove,
     this.onSecondMove,
+    this.onEval,
+    this.paused = false,
     this.compact = false,
     this.maxHeight,
   });
@@ -125,6 +127,14 @@ class EnginePanel extends ConsumerStatefulWidget {
   /// Reports the first move of the second line while two or more are shown
   /// (for a fainter arrow, D-097).
   final void Function(String? uci)? onSecondMove;
+
+  /// Reports every evaluation shown (device or cloud), so the screen can
+  /// hand it on ("About this position" reuses it, D-105).
+  final void Function(EngineEval eval)? onEval;
+
+  /// Stops the search while something else uses the engine (a sheet over
+  /// the board); resumes, from the cache when it can, when unpaused.
+  final bool paused;
   final bool compact;
 
   /// Keeps the source and evaluation visible while longer variations scroll.
@@ -194,7 +204,7 @@ class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingOb
   late final EngineService _engine = ref.read(engineServiceProvider);
   PageRoute<dynamic>? _route;
 
-  bool get _active => !_backgrounded && !_covered;
+  bool get _active => !_backgrounded && !_covered && !widget.paused;
 
   int get _multiPv => widget.compact && !_expanded ? 1 : ref.read(settingsProvider).engineLines.clamp(1, 5);
 
@@ -221,6 +231,14 @@ class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingOb
   @override
   void didUpdateWidget(EnginePanel old) {
     super.didUpdateWidget(old);
+    if (old.paused != widget.paused) {
+      if (widget.paused) {
+        _halt();
+      } else {
+        _schedule(immediate: true);
+      }
+      return;
+    }
     if (old.fen != widget.fen) {
       _cloud = null;
       _cloudMissing = false;
@@ -303,6 +321,14 @@ class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingOb
         });
         final best = cloud.lines.isEmpty ? null : cloud.lines.first;
         widget.onBestMove?.call(best == null || best.moves.isEmpty ? null : best.moves.first);
+        widget.onEval?.call(
+          EngineEval(
+            fen: fen,
+            depth: cloud.depth,
+            done: true,
+            lines: [for (final c in cloud.lines) PvLine(multipv: 0, moves: c.moves, cp: c.cp, mate: c.mate)],
+          ),
+        );
         return;
       }
     }
@@ -352,6 +378,7 @@ class _EnginePanelState extends ConsumerState<EnginePanel> with WidgetsBindingOb
       _error = null;
     });
     void report(EngineEval e) {
+      widget.onEval?.call(e);
       final best = e.best;
       widget.onBestMove?.call(best == null || best.moves.isEmpty ? null : best.moves.first);
     }

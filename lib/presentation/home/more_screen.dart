@@ -14,7 +14,7 @@ class MoreScreen extends StatelessWidget {
     Widget tile(IconData icon, String title, String subtitle, String route) =>
         NavTile(icon: icon, title: title, subtitle: subtitle, onTap: () => context.push(route));
     return Scaffold(
-      appBar: AppBar(title: Text(l.navMore)),
+      appBar: PageBar(bar: AppBar(title: Text(l.navMore))),
       body: ListView(
         padding: const EdgeInsets.only(bottom: AppSpacing.listBottom).inPage(context),
         children: [
@@ -33,6 +33,7 @@ class MoreScreen extends StatelessWidget {
               tile(AppIcons.analysis, l.analysisBoard, l.analysisBoardSubtitle, '/analysis'),
               tile(AppIcons.editPosition, l.positionEditor, l.positionEditorSubtitle, '/position-editor'),
               tile(AppIcons.openings, l.openingsTitle, l.openingsSubtitle, '/openings'),
+              tile(AppIcons.puzzle, l.puzzlesTitle, l.puzzlesSubtitle, '/puzzles'),
             ],
           ),
           SectionHeader(l.moreApp),

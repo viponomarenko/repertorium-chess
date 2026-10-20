@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/formatters.dart';
 import '../../core/l10n.dart';
 import '../../data/db/database.dart';
 import '../../data/import/pgn_import_service.dart';
@@ -13,7 +14,9 @@ import '../repertoire/import_wizard_screen.dart';
 import '../theme/app_icons.dart';
 import '../widgets/common.dart';
 import '../widgets/export_sheet.dart';
+import 'collection_wide.dart';
 import 'import_flow.dart';
+import 'library_screen.dart' show sourceLabel;
 
 class CollectionScreen extends ConsumerStatefulWidget {
   const CollectionScreen({super.key, required this.id});
@@ -128,6 +131,208 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
     _endSelection();
   }
 
+  /// The result counts for the current search, kept between builds.
+  Stream<Map<String, int>>? _counts;
+  String? _countsQuery;
+
+  Stream<Map<String, int>> _resultCounts() {
+    if (_counts == null || _countsQuery != _filter.query) {
+      _countsQuery = _filter.query;
+      _counts = ref.read(libraryRepositoryProvider).watchResultCounts(widget.id, query: _filter.query);
+    }
+    return _counts!;
+  }
+
+  void _setResult(String? r) => setState(() {
+    // A new filter hides games: forget the selection.
+    _filter = GameFilter(query: _filter.query, result: r);
+    _selected.clear();
+  });
+
+  void _openGame(List<GameRow> games, GameRow g) =>
+      context.push('/game/${g.id}', extra: GameScreenArgs(siblings: games.map((g) => g.id).toList()));
+
+  void _toggle(GameRow g) => setState(() {
+    if (!_selected.remove(g.id)) _selected.add(g.id);
+  });
+
+  Widget _wide(CollectionRow? col, String name, AsyncSnapshot<List<GameRow>> gs, List<GameRow> games, bool selecting) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    const width = AppSizes.dashboardWidth;
+    // All its games, whatever the search shows.
+    final total = ref.watch(collectionsProvider).value?.where((c) => c.row.id == widget.id).firstOrNull?.gameCount;
+    return PopScope(
+      // Back first ends the selection.
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _endSelection();
+      },
+      child: Scaffold(
+        appBar: PageBar(
+          width: width,
+          bar: AppBar(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                if (col != null)
+                  Text(
+                    l.collectionMeta(
+                      l.gamesCount(total ?? games.length),
+                      sourceLabel(context, col.source),
+                      context.fmtDayMonth(col.updatedAt),
+                    ),
+                    style: context.tt.meta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+            actions: [
+              if (selecting)
+                FilledButton.icon(
+                  style: AppButtonSize.compact,
+                  onPressed: _endSelection,
+                  icon: const Icon(AppIcons.select, size: AppSizes.iconMd),
+                  label: Text(l.endSelection),
+                )
+              else
+                OutlinedButton.icon(
+                  style: AppButtonSize.compact,
+                  onPressed: games.isEmpty ? null : () => setState(() => _selectMode = true),
+                  icon: const Icon(AppIcons.select, size: AppSizes.iconMd),
+                  label: Text(l.select),
+                ),
+              AppMenuButton<String>(
+                icon: const Icon(AppIcons.more),
+                tooltip: l.more,
+                onSelected: (v) async {
+                  if (v != 'newFen') return;
+                  final fen = await context.push<String>('/position-editor?pick=1');
+                  if (fen != null && mounted) {
+                    await context.push(
+                      '/game/new',
+                      extra: GameScreenArgs(collectionId: widget.id, fen: fen),
+                    );
+                  }
+                },
+                itemBuilder: (_) => [
+                  appMenuItem(value: 'newFen', icon: AppIcons.editPosition, label: l.newGameFromPosition),
+                ],
+              ),
+              AppGap.h4,
+            ],
+          ),
+        ),
+        bottomNavigationBar: selecting
+            ? SelectionBar(
+                count: _selected.length,
+                onSelectAll: () => setState(() => _selected.addAll(games.map((g) => g.id))),
+                onToRepertoire: () => _toRepertoire(games, name),
+                onMove: _move,
+                onExport: () => _export(games, name),
+                onDelete: _delete,
+              )
+            : null,
+        body: ListView(
+          padding: AppInsets.page.inPage(context, width: width),
+          children: [
+            ChipRow(
+              children: [
+                FilledButton.icon(
+                  style: AppButtonSize.compact,
+                  onPressed: games.isEmpty ? null : () => _toRepertoire(games, name),
+                  icon: const Icon(AppIcons.addToRepertoire, size: AppSizes.iconMd),
+                  label: Text(l.addToRepertoire),
+                ),
+                OutlinedButton.icon(
+                  style: AppButtonSize.compact,
+                  onPressed: () => context.push('/game/new', extra: GameScreenArgs(collectionId: widget.id)),
+                  icon: const Icon(AppIcons.add, size: AppSizes.iconMd),
+                  label: Text(l.newGame),
+                ),
+                OutlinedButton.icon(
+                  style: AppButtonSize.compact,
+                  onPressed: () => context.push('/import', extra: ImportInput(targetCollectionId: widget.id)),
+                  icon: const Icon(AppIcons.openFile, size: AppSizes.iconMd),
+                  label: Text(l.importHereShort),
+                ),
+                OutlinedButton.icon(
+                  style: AppButtonSize.compact,
+                  onPressed: games.isEmpty ? null : () => _export(games, name),
+                  icon: const Icon(AppIcons.share, size: AppSizes.iconMd),
+                  label: Text(l.exportShort),
+                ),
+              ],
+            ),
+            AppGap.v12,
+            SearchField(
+              controller: _search,
+              hint: l.searchGamesHint,
+              onChanged: (v) => setState(() {
+                _filter = GameFilter(query: v, result: _filter.result);
+                _selected.clear();
+              }),
+            ),
+            AppGap.v12,
+            StreamBuilder<Map<String, int>>(
+              stream: _resultCounts(),
+              builder: (context, c) {
+                final counts = c.data ?? const <String, int>{};
+                final all = counts.values.fold<int>(0, (a, b) => a + b);
+                return ChipRow(
+                  children: [
+                    CountChip(
+                      label: l.all,
+                      count: all,
+                      selected: _filter.result == null,
+                      onTap: () => _setResult(null),
+                    ),
+                    for (final r in const ['1-0', '0-1', '1/2-1/2', '*'])
+                      CountChip(
+                        label: r == '1/2-1/2' ? '½-½' : r,
+                        count: counts[r] ?? 0,
+                        selected: _filter.result == r,
+                        onTap: () => _setResult(_filter.result == r ? null : r),
+                      ),
+                  ],
+                );
+              },
+            ),
+            // Nothing has arrived yet: wait, do not say "no games".
+            if (!gs.hasData && !gs.hasError)
+              const Padding(padding: EdgeInsets.all(AppSpacing.xxl), child: LoadingView())
+            else if (games.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                child: Column(
+                  children: [
+                    Text(
+                      _filter.isEmpty ? l.noGames : l.nothingFound,
+                      style: theme.textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
+            else
+              for (final (event, group) in groupByEvent(games))
+                EventGroup(
+                  event: event,
+                  games: group,
+                  selecting: selecting,
+                  selected: _selected,
+                  onOpen: (g) => _openGame(games, g),
+                  onToggle: _toggle,
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -142,6 +347,11 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
           builder: (context, gs) {
             final games = gs.data ?? const <GameRow>[];
             final selecting = _selectMode || _selected.isNotEmpty;
+            // A tablet gets the redesigned page (D-104); a phone keeps its
+            // list, which works well as it is.
+            if (isWideLayout(context)) {
+              return _wide(col, name, gs, games, selecting);
+            }
             return PopScope(
               // Back first closes the selection or the search.
               canPop: !selecting && !_searching,
@@ -155,106 +365,108 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
               },
               child: Scaffold(
                 appBar: selecting
-                    ? AppBar(
-                        leading: IconButton(
-                          tooltip: l.cancel,
-                          icon: const Icon(AppIcons.close),
-                          onPressed: _endSelection,
+                    ? PageBar(
+                        bar: AppBar(
+                          leading: IconButton(
+                            tooltip: l.cancel,
+                            icon: const Icon(AppIcons.close),
+                            onPressed: _endSelection,
+                          ),
+                          title: Text(l.selectedCount(_selected.length)),
+                          actions: [
+                            IconButton(
+                              tooltip: l.selectAll,
+                              icon: const Icon(AppIcons.selectAll),
+                              onPressed: () => setState(() => _selected.addAll(games.map((g) => g.id))),
+                            ),
+                            IconButton(
+                              tooltip: l.delete,
+                              icon: const Icon(AppIcons.delete),
+                              onPressed: _selected.isEmpty ? null : _delete,
+                            ),
+                            AppMenuButton<String>(
+                              icon: const Icon(AppIcons.more),
+                              tooltip: l.more,
+                              enabled: _selected.isNotEmpty,
+                              onSelected: (v) async {
+                                switch (v) {
+                                  case 'export':
+                                    await _export(games, name);
+                                  case 'rep':
+                                    await _toRepertoire(games, name);
+                                  case 'move':
+                                    await _move();
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                appMenuItem(value: 'export', icon: AppIcons.share, label: l.exportPgn),
+                                appMenuItem(value: 'rep', icon: AppIcons.addToRepertoire, label: l.addToRepertoire),
+                                appMenuItem(value: 'move', icon: AppIcons.moveTo, label: l.moveTo),
+                              ],
+                            ),
+                          ],
                         ),
-                        title: Text(l.selectedCount(_selected.length)),
-                        actions: [
-                          IconButton(
-                            tooltip: l.selectAll,
-                            icon: const Icon(AppIcons.selectAll),
-                            onPressed: () => setState(() => _selected.addAll(games.map((g) => g.id))),
-                          ),
-                          IconButton(
-                            tooltip: l.delete,
-                            icon: const Icon(AppIcons.delete),
-                            onPressed: _selected.isEmpty ? null : _delete,
-                          ),
-                          PopupMenuButton<String>(
-                            constraints: appMenuConstraints,
-                            icon: const Icon(AppIcons.more),
-                            tooltip: l.more,
-                            enabled: _selected.isNotEmpty,
-                            onSelected: (v) async {
-                              switch (v) {
-                                case 'export':
-                                  await _export(games, name);
-                                case 'rep':
-                                  await _toRepertoire(games, name);
-                                case 'move':
-                                  await _move();
-                              }
-                            },
-                            itemBuilder: (_) => [
-                              appMenuItem(value: 'export', icon: AppIcons.share, label: l.exportPgn),
-                              appMenuItem(value: 'rep', icon: AppIcons.addToRepertoire, label: l.addToRepertoire),
-                              appMenuItem(value: 'move', icon: AppIcons.moveTo, label: l.moveTo),
-                            ],
-                          ),
-                        ],
                       )
-                    : AppBar(
-                        title: _searching
-                            ? TextField(
-                                controller: _search,
-                                autofocus: true,
-                                decoration: InputDecoration(hintText: l.searchGamesHint, border: InputBorder.none),
-                                onChanged: (v) => setState(() {
-                                  _filter = GameFilter(query: v, result: _filter.result);
-                                  _selected.clear();
-                                }),
-                              )
-                            : Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        actions: [
-                          IconButton(
-                            tooltip: _searching ? l.closeSearch : l.search,
-                            icon: Icon(_searching ? AppIcons.close : AppIcons.search),
-                            onPressed: _searching ? _closeSearch : () => setState(() => _searching = true),
-                          ),
-                          PopupMenuButton<String>(
-                            constraints: appMenuConstraints,
-                            icon: const Icon(AppIcons.more),
-                            tooltip: l.more,
-                            onSelected: (v) async {
-                              switch (v) {
-                                case 'new':
-                                  await context.push('/game/new', extra: GameScreenArgs(collectionId: widget.id));
-                                case 'newFen':
-                                  final fen = await context.push<String>('/position-editor?pick=1');
-                                  if (fen != null && context.mounted) {
-                                    await context.push(
-                                      '/game/new',
-                                      extra: GameScreenArgs(collectionId: widget.id, fen: fen),
-                                    );
-                                  }
-                                case 'import':
-                                  await context.push('/import', extra: ImportInput(targetCollectionId: widget.id));
-                                case 'export':
-                                  await _export(games, name);
-                                case 'rep':
-                                  await _toRepertoire(games, name);
-                                case 'select':
-                                  setState(() => _selectMode = true);
-                              }
-                            },
-                            itemBuilder: (_) => [
-                              appMenuItem(
-                                value: 'select',
-                                icon: AppIcons.select,
-                                label: l.select,
-                                enabled: games.isNotEmpty,
-                              ),
-                              appMenuItem(value: 'new', icon: AppIcons.add, label: l.newGame),
-                              appMenuItem(value: 'newFen', icon: AppIcons.editPosition, label: l.newGameFromPosition),
-                              appMenuItem(value: 'import', icon: AppIcons.openFile, label: l.importHere),
-                              appMenuItem(value: 'export', icon: AppIcons.share, label: l.exportPgn),
-                              appMenuItem(value: 'rep', icon: AppIcons.addToRepertoire, label: l.addToRepertoire),
-                            ],
-                          ),
-                        ],
+                    : PageBar(
+                        bar: AppBar(
+                          title: _searching
+                              ? TextField(
+                                  controller: _search,
+                                  autofocus: true,
+                                  decoration: InputDecoration(hintText: l.searchGamesHint, border: InputBorder.none),
+                                  onChanged: (v) => setState(() {
+                                    _filter = GameFilter(query: v, result: _filter.result);
+                                    _selected.clear();
+                                  }),
+                                )
+                              : Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          actions: [
+                            IconButton(
+                              tooltip: _searching ? l.closeSearch : l.search,
+                              icon: Icon(_searching ? AppIcons.close : AppIcons.search),
+                              onPressed: _searching ? _closeSearch : () => setState(() => _searching = true),
+                            ),
+                            AppMenuButton<String>(
+                              icon: const Icon(AppIcons.more),
+                              tooltip: l.more,
+                              onSelected: (v) async {
+                                switch (v) {
+                                  case 'new':
+                                    await context.push('/game/new', extra: GameScreenArgs(collectionId: widget.id));
+                                  case 'newFen':
+                                    final fen = await context.push<String>('/position-editor?pick=1');
+                                    if (fen != null && context.mounted) {
+                                      await context.push(
+                                        '/game/new',
+                                        extra: GameScreenArgs(collectionId: widget.id, fen: fen),
+                                      );
+                                    }
+                                  case 'import':
+                                    await context.push('/import', extra: ImportInput(targetCollectionId: widget.id));
+                                  case 'export':
+                                    await _export(games, name);
+                                  case 'rep':
+                                    await _toRepertoire(games, name);
+                                  case 'select':
+                                    setState(() => _selectMode = true);
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                appMenuItem(
+                                  value: 'select',
+                                  icon: AppIcons.select,
+                                  label: l.select,
+                                  enabled: games.isNotEmpty,
+                                ),
+                                appMenuItem(value: 'new', icon: AppIcons.add, label: l.newGame),
+                                appMenuItem(value: 'newFen', icon: AppIcons.editPosition, label: l.newGameFromPosition),
+                                appMenuItem(value: 'import', icon: AppIcons.openFile, label: l.importHere),
+                                appMenuItem(value: 'export', icon: AppIcons.share, label: l.exportPgn),
+                                appMenuItem(value: 'rep', icon: AppIcons.addToRepertoire, label: l.addToRepertoire),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                 body: Column(
                   children: [

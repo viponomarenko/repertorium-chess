@@ -1111,7 +1111,7 @@
   "periodYear": "Year",
   "timeControl": "Time control",
   "ratedOnly": "Rated only",
-  "maxGames": "At most {count, plural, one{{count} game} other{{count} games}}",
+  "maxGames": "At most {count, plural, one{{count} new game} other{{count} new games}}",
   "@maxGames": {
     "placeholders": {
       "count": {
@@ -1548,7 +1548,7 @@
   "boardThemeGrey": "Grey",
   "boardThemePurple": "Purple",
   "boardThemeTabiya": "Repertorium",
-  "disconnectChessComMessage": "Imported games stay in the library. You can connect the account again at any time.",
+  "disconnectChessComMessage": "The downloaded games stay in My games unless you delete them. You can connect the account again at any time.",
   "gapDismissed": "Hidden from the report",
   "castleWhiteShort": "White O-O",
   "castleWhiteLong": "White O-O-O",
@@ -1953,7 +1953,7 @@
       }
     }
   },
-  "stageNewCount": "{count, plural, one{{count} new} other{{count} new}}",
+  "stageNewCount": "{count, plural, one{{count} new move} other{{count} new moves}}",
   "@stageNewCount": {
     "placeholders": {
       "count": {
@@ -2009,7 +2009,7 @@
   "tabGames": "Games",
   "tabOpenings": "Openings",
   "tabGaps": "Differences",
-  "gapSectionForgot": "You forgot your move",
+  "gapSectionForgot": "You played off the repertoire",
   "gapSectionNovelty": "The opponent played something new",
   "gapSectionEnd": "The line ended",
   "gapSectionOther": "Another opening",
@@ -2040,21 +2040,95 @@
   "importShort": "Import",
   "trainFromHereLong": "Train from here",
   "arrowsShort": "Arrows",
+  "periodAll": "All history",
+  "syncDoneMore": "Added {count, plural, one{{count} game} other{{count} games}}. Not everything is downloaded yet: tap Download again.",
+  "@syncDoneMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yesterday": "Yesterday",
+  "bothColors": "Both colors",
+  "allResults": "All results",
+  "resultWins": "Wins",
+  "resultLosses": "Losses",
+  "resultDraws": "Draws",
+  "gamesSearchHint": "Opponent or opening",
+  "close": "Close",
+  "gapHabitTitle": "You usually play something else here",
+  "gapHabitShare": "{count} of {total, plural, one{{total} game {color}} other{{total} games {color}}}",
+  "@gapHabitShare": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "color": {
+        "type": "String"
+      }
+    }
+  },
+  "gapExpected": "Repertoire: {move}",
+  "@gapExpected": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "gapNotInRepertoire": "This move is not in the repertoire",
+  "gapLineEnded": "Your line ended here",
+  "gapLearnMove": "Learn {move}",
+  "@gapLearnMove": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "gapAddMyMove": "Add {move} to the repertoire",
+  "@gapAddMyMove": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "inSentenceAsWhite": "as White",
+  "inSentenceAsBlack": "as Black",
+  "gapAddMove": "Add {move}",
+  "@gapAddMove": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
   "pickFromCatalog": "Pick from the opening catalog",
   "trainDueCount": "Train: {count} to review",
   "@trainDueCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "popularOpenings": "Popular",
   "allOpenings": "All openings",
-  "otherShort": "Other",
+  "otherShort": "Modes",
   "activitySummary": "Days trained: {days} · answers: {total}",
   "@activitySummary": {
     "placeholders": {
-      "days": {"type": "int"},
-      "total": {"type": "int"}
+      "days": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "legendBelowGoal": "below goal",
@@ -2063,43 +2137,61 @@
   "engineApply": "Make {san} main",
   "@engineApply": {
     "placeholders": {
-      "san": {"type": "String"}
+      "san": {
+        "type": "String"
+      }
     }
   },
   "engineKeepMine": "Keep my move",
   "engineApplied": "{best} is main now; {old} is an alternative",
   "@engineApplied": {
     "placeholders": {
-      "best": {"type": "String"},
-      "old": {"type": "String"}
+      "best": {
+        "type": "String"
+      },
+      "old": {
+        "type": "String"
+      }
     }
   },
   "engineKept": "Flag cleared: {san} stays the main move",
   "@engineKept": {
     "placeholders": {
-      "san": {"type": "String"}
+      "san": {
+        "type": "String"
+      }
     }
   },
   "weekAnswersTotal": "{count, plural, one{{count} answer this week} other{{count} answers this week}}",
   "@weekAnswersTotal": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statLearnedCaption": "Learned",
   "learnedOfTotal": "{learned} of {total, plural, one{{total} move} other{{total} moves}}",
   "@learnedOfTotal": {
     "placeholders": {
-      "learned": {"type": "int"},
-      "total": {"type": "int"}
+      "learned": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "forecastNext7Short": "in 7 days",
   "forecastSummaryAvg": "Today {today} · {avg} a day on average",
   "@forecastSummaryAvg": {
     "placeholders": {
-      "today": {"type": "int"},
-      "avg": {"type": "String"}
+      "today": {
+        "type": "int"
+      },
+      "avg": {
+        "type": "String"
+      }
     }
   },
   "forecastLegendWeek": "next 7 days",
@@ -2107,30 +2199,661 @@
   "answersCount": "{count, plural, one{{count} answer} other{{count} answers}}",
   "@answersCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "retentionTrendUp": "This week {d} pp better than the 90-day average",
   "@retentionTrendUp": {
     "placeholders": {
-      "d": {"type": "int"}
+      "d": {
+        "type": "int"
+      }
     }
   },
   "retentionTrendDown": "This week {d} pp worse than the 90-day average",
   "@retentionTrendDown": {
     "placeholders": {
-      "d": {"type": "int"}
+      "d": {
+        "type": "int"
+      }
     }
   },
   "trainFromHereShort": "From here",
   "problemsCount": "{count, plural, one{{count} problem} other{{count} problems}}",
   "@problemsCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "opponentShareHeader": "share",
   "retentionPeriod7": "7 days",
   "retentionPeriod30": "30 days",
-  "retentionPeriod90": "90 days"
+  "retentionPeriod90": "90 days",
+  "leftRepertoireAt": "Left the repertoire: {move}",
+  "@leftRepertoireAt": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "openOn": "Open on {service}",
+  "@openOn": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteDownloadedGames": "Also delete the downloaded games ({count})",
+  "@deleteDownloadedGames": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateNow": "Update now",
+  "repSummaryIn": "{count, plural, one{In {count} repertoire} other{In {count} repertoires}}",
+  "@repSummaryIn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dueToday": "to review today",
+  "repSummaryLine": "{fresh, plural, one{{fresh} new move} other{{fresh} new moves}} · {learned} of {total} learned",
+  "@repSummaryLine": {
+    "placeholders": {
+      "fresh": {
+        "type": "int"
+      },
+      "learned": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "trainAll": "Train all",
+  "repStatusDue": "{due} to review · {fresh, plural, one{{fresh} new} other{{fresh} new}}",
+  "@repStatusDue": {
+    "placeholders": {
+      "due": {
+        "type": "int"
+      },
+      "fresh": {
+        "type": "int"
+      }
+    }
+  },
+  "repStatusNew": "{fresh, plural, one{{fresh} new move} other{{fresh} new moves}}",
+  "@repStatusNew": {
+    "placeholders": {
+      "fresh": {
+        "type": "int"
+      }
+    }
+  },
+  "repStatusDone": "All done for today",
+  "librarySearchHint": "Search by name, player or opening",
+  "collectionsTitle": "Collections",
+  "importFileTitle": "PGN file",
+  "importFileSub": "From the device or Files",
+  "importClipboardTitle": "From clipboard",
+  "importClipboardSub": "Paste PGN",
+  "importLinkTitle": "By link",
+  "importLinkSub": "Lichess study, game, URL",
+  "srcFilesClipboard": "Files and clipboard",
+  "srcFile": "File",
+  "srcClipboard": "Clipboard",
+  "srcManual": "Collection",
+  "srcAnalysis": "Analyses",
+  "nothingFoundFor": "Nothing found for «{query}»",
+  "@nothingFoundFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "collectionMeta": "{games} · {source} · updated {date}",
+  "@collectionMeta": {
+    "placeholders": {
+      "games": {
+        "type": "String"
+      },
+      "source": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "exportShort": "Export",
+  "importHereShort": "Import here",
+  "toRepertoireShort": "To repertoire",
+  "endSelection": "Done",
+  "aboutPosition": "About this position",
+  "navPosition": "Position",
+  "aboutMyComment": "My comment",
+  "aboutInRepertoire": "In “{name}”",
+  "@aboutInRepertoire": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutOpening": "Opening",
+  "aboutEngine": "Engine",
+  "aboutAnalyze": "Analyze",
+  "aboutEmptyHint": "Nothing is known about this position yet. Add it to a repertoire to write your own comment.",
+  "aboutFinalPosition": "About the final position",
+  "verdictEqual": "The position is equal",
+  "verdictSlightWhite": "White is slightly better",
+  "verdictSlightBlack": "Black is slightly better",
+  "verdictClearWhite": "White is clearly better",
+  "verdictClearBlack": "Black is clearly better",
+  "verdictDecisiveWhite": "White is winning",
+  "verdictDecisiveBlack": "Black is winning",
+  "verdictMateWhite": "{n, plural, one{White mates in {n} move} other{White mates in {n} moves}}",
+  "@verdictMateWhite": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "verdictMateBlack": "{n, plural, one{Black mates in {n} move} other{Black mates in {n} moves}}",
+  "@verdictMateBlack": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "bestMoveIs": "Best move: {move}",
+  "@bestMoveIs": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "kindMate": "mate",
+  "kindPromotion": "promotes a pawn",
+  "kindWinsMaterial": "wins material",
+  "kindCastling": "castling",
+  "kindCheck": "with check",
+  "kindCapture": "a capture",
+  "onlyMoveHere": "Only one move holds the position here",
+  "threatIs": "Threat: {move}",
+  "@threatIs": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "threatMate": "{n, plural, one{Threat: {move}, mate in {n}} other{Threat: {move}, mate in {n}}}",
+  "@threatMate": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "textForPositionAfter": "There is an explanation for the position after {move}",
+  "@textForPositionAfter": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "wikibooksMachine": "Wikibooks · machine translation · CC BY-SA 4.0",
+  "wikibooksReviewed": "Wikibooks · translation checked · CC BY-SA 4.0",
+  "wikibooksOriginal": "Wikibooks · CC BY-SA 4.0",
+  "textShowOriginal": "Original",
+  "textShowTranslation": "Translation",
+  "textReadMore": "Read more",
+  "textReadLess": "Show less",
+  "dataSources": "Data sources",
+  "sourceOpeningNames": "Opening names: lichess-org/chess-openings",
+  "sourceOpeningTexts": "Opening texts: Wikibooks, Chess Opening Theory",
+  "sourceOpeningTextsLicense": "CC BY-SA 4.0. The Ukrainian translation is machine-made and shared under the same licence.",
+  "aboutStructure": "Structure",
+  "structureWhite": "{name} · White",
+  "@structureWhite": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "structureBlack": "{name} · Black",
+  "@structureBlack": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "structureSource": "Repertorium chess",
+  "structureNotReviewed": "Repertorium chess · not reviewed yet",
+  "featPassedWhite": "{n, plural, one{White has a passed pawn on {squares}} other{White has passed pawns on {squares}}}",
+  "@featPassedWhite": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "squares": {
+        "type": "String"
+      }
+    }
+  },
+  "featPassedBlack": "{n, plural, one{Black has a passed pawn on {squares}} other{Black has passed pawns on {squares}}}",
+  "@featPassedBlack": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "squares": {
+        "type": "String"
+      }
+    }
+  },
+  "featIsolatedWhite": "{n, plural, one{White has an isolated pawn on {squares}} other{White has isolated pawns on {squares}}}",
+  "@featIsolatedWhite": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "squares": {
+        "type": "String"
+      }
+    }
+  },
+  "featIsolatedBlack": "{n, plural, one{Black has an isolated pawn on {squares}} other{Black has isolated pawns on {squares}}}",
+  "@featIsolatedBlack": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "squares": {
+        "type": "String"
+      }
+    }
+  },
+  "featBackwardWhite": "{n, plural, one{White has a backward pawn on {squares}} other{White has backward pawns on {squares}}}",
+  "@featBackwardWhite": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "squares": {
+        "type": "String"
+      }
+    }
+  },
+  "featBackwardBlack": "{n, plural, one{Black has a backward pawn on {squares}} other{Black has backward pawns on {squares}}}",
+  "@featBackwardBlack": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "squares": {
+        "type": "String"
+      }
+    }
+  },
+  "featDoubledWhite": "White has doubled pawns on {squares}",
+  "@featDoubledWhite": {
+    "placeholders": {
+      "squares": {
+        "type": "String"
+      }
+    }
+  },
+  "featDoubledBlack": "Black has doubled pawns on {squares}",
+  "@featDoubledBlack": {
+    "placeholders": {
+      "squares": {
+        "type": "String"
+      }
+    }
+  },
+  "featOpenFile": "The {file}-file is open: a road for the rooks",
+  "@featOpenFile": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "featHalfOpenWhite": "The {file}-file is half-open for White",
+  "@featHalfOpenWhite": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "featHalfOpenBlack": "The {file}-file is half-open for Black",
+  "@featHalfOpenBlack": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "featOppositeCastling": "Kings on opposite wings: usually a race of pawn storms",
+  "featWeakShelterWhite": "The pawn shelter of White's king is weakened",
+  "featWeakShelterBlack": "The pawn shelter of Black's king is weakened",
+  "commentHint": "A plan, an idea, a trap worth remembering",
+  "commentAfterMove": "After {move}",
+  "@commentAfterMove": {
+    "placeholders": {
+      "move": {
+        "type": "String"
+      }
+    }
+  },
+  "commentStartPosition": "Starting position",
+  "signsMore": "More signs",
+  "signsLess": "Fewer signs",
+  "signsMove": "Move",
+  "signsPosition": "Position",
+  "signsIdeas": "Ideas",
+  "menuImportExport": "Import and export",
+  "menuTools": "Tools",
+  "modesTitle": "How to train",
+  "modesUnavailable": "Not available yet",
+  "streakStartHint": "Train today and your week shows up here",
+  "lineSoFar": "Line: {moves}",
+  "@lineSoFar": {
+    "placeholders": {
+      "moves": {
+        "type": "String"
+      }
+    }
+  },
+  "modeDrillLocked": "Opens once you have learned a move",
+  "ecoGroupA": "Flank openings",
+  "ecoGroupB": "Semi-open games",
+  "ecoGroupC": "Open games and the French",
+  "ecoGroupD": "Closed and semi-closed games",
+  "ecoGroupE": "Indian defences",
+  "openingVariations": "{count, plural, one{{count} line} other{{count} lines}}",
+  "@openingVariations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "repertoireOtherSideHint": "You train one side so far. Add the other to be ready for both colours.",
+  "analysisEmptyHint": "Make a move on the board, or paste a PGN or FEN",
+  "pasteGame": "Paste",
+  "puzzlesTitle": "Puzzles",
+  "puzzlesSubtitle": "Lichess puzzles by theme",
+  "puzzleRating": "Puzzle rating",
+  "puzzleRatingProvisional": "Provisional rating {rating}",
+  "@puzzleRatingProvisional": {
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "puzzleStatPlayed": "Puzzles",
+  "puzzleStatSolved": "Solved",
+  "puzzlesNoteLocal": "Puzzles come from Lichess; without the internet, or while Lichess limits them, from the app's own set of 50,000. Your rating stays on this device.",
+  "puzzlesNoteLichess": "Results count into your Lichess rating ({user}). Without the internet, puzzles come from the app's own set and the results are sent later.",
+  "@puzzlesNoteLichess": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "puzzlesReconnect": "To count puzzles into your Lichess rating, connect the account again: Lichess will ask for access to puzzles.",
+  "puzzlesReconnectAction": "Connect",
+  "puzzlesPending": "{n, plural, one{{n} result waits to be sent to Lichess} other{{n} results wait to be sent to Lichess}}",
+  "@puzzlesPending": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "puzzleRatingLichess": "Lichess rating",
+  "puzzleFromPackOffline": "No internet: a puzzle from the app's set",
+  "puzzleFromPackLimited": "Lichess limits puzzles for now: a puzzle from the app's set",
+  "puzzleThemeScore": "{won} of {played}",
+  "@puzzleThemeScore": {
+    "placeholders": {
+      "won": {
+        "type": "int"
+      },
+      "played": {
+        "type": "int"
+      }
+    }
+  },
+  "puzzleThemeScoreLabel": "{played, plural, one{{won} of {played} puzzle solved} other{{won} of {played} puzzles solved}}",
+  "@puzzleThemeScoreLabel": {
+    "placeholders": {
+      "won": {
+        "type": "int"
+      },
+      "played": {
+        "type": "int"
+      }
+    }
+  },
+  "puzzleCatRecommended": "Recommended",
+  "puzzleCatPhases": "Phases",
+  "puzzleCatMotifs": "Motifs",
+  "puzzleCatAdvanced": "Advanced",
+  "puzzleCatMates": "Checkmates",
+  "puzzleCatMateThemes": "Mate patterns",
+  "puzzleCatSpecialMoves": "Special moves",
+  "puzzleCatGoals": "Goals",
+  "puzzleCatLengths": "Length",
+  "puzzleCatOrigin": "Origin",
+  "puzzleFindWhite": "Your move: find the best move for White",
+  "puzzleFindBlack": "Your move: find the best move for Black",
+  "puzzleBestMove": "Best move! Keep going",
+  "puzzleWrongMove": "That is not the move. Try another one",
+  "puzzleSolved": "Solved",
+  "puzzleNotSolved": "Not solved",
+  "puzzleSolutionShown": "Solution shown",
+  "puzzleRatingAfter": "Rating {rating}, {change}",
+  "@puzzleRatingAfter": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "puzzleRatingUnchanged": "unchanged",
+  "puzzleShowSolution": "Show solution",
+  "puzzleNext": "Next puzzle",
+  "puzzleOnLichess": "Open on Lichess",
+  "puzzleInfo": "Puzzle {id} · rating {rating}",
+  "@puzzleInfo": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      },
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "puzzleRateLimited": "Lichess limits how many puzzles one network can take in an hour, and that limit is reached. Try again in a while.",
+  "puzzleLoadError": "Could not load puzzles. Check the internet connection.",
+  "ptMix": "All themes",
+  "ptMixDesc": "A bit of everything, near your rating",
+  "ptOpening": "Opening",
+  "ptOpeningDesc": "Tactics in the first moves of the game",
+  "ptMiddlegame": "Middlegame",
+  "ptMiddlegameDesc": "Tactics in the middle of the game",
+  "ptEndgame": "Endgame",
+  "ptEndgameDesc": "Tactics in the last phase of the game",
+  "ptRookEndgame": "Rook endgame",
+  "ptRookEndgameDesc": "Only rooks and pawns",
+  "ptBishopEndgame": "Bishop endgame",
+  "ptBishopEndgameDesc": "Only bishops and pawns",
+  "ptPawnEndgame": "Pawn endgame",
+  "ptPawnEndgameDesc": "Only pawns",
+  "ptKnightEndgame": "Knight endgame",
+  "ptKnightEndgameDesc": "Only knights and pawns",
+  "ptQueenEndgame": "Queen endgame",
+  "ptQueenEndgameDesc": "Only queens and pawns",
+  "ptQueenRookEndgame": "Queen and rook",
+  "ptQueenRookEndgameDesc": "Only queens, rooks and pawns",
+  "ptAdvancedPawn": "Advanced pawn",
+  "ptAdvancedPawnDesc": "A pawn close to promotion decides",
+  "ptAttackingF2F7": "Attacking f2 or f7",
+  "ptAttackingF2F7Desc": "Strike at the weakest square near the king",
+  "ptCapturingDefender": "Capture the defender",
+  "ptCapturingDefenderDesc": "Take the piece that guards another",
+  "ptDiscoveredAttack": "Discovered attack",
+  "ptDiscoveredAttackDesc": "Move one piece to unmask an attack by another",
+  "ptDoubleCheck": "Double check",
+  "ptDoubleCheckDesc": "Check with two pieces at once",
+  "ptExposedKing": "Exposed king",
+  "ptExposedKingDesc": "Attack a king with few defenders",
+  "ptFork": "Fork",
+  "ptForkDesc": "One piece attacks two at once",
+  "ptHangingPiece": "Hanging piece",
+  "ptHangingPieceDesc": "Win a piece left without defence",
+  "ptKingsideAttack": "Kingside attack",
+  "ptKingsideAttackDesc": "Attack the king after short castling",
+  "ptPin": "Pin",
+  "ptPinDesc": "A piece cannot move without exposing a more valuable one behind it",
+  "ptQueensideAttack": "Queenside attack",
+  "ptQueensideAttackDesc": "Attack the king after long castling",
+  "ptSacrifice": "Sacrifice",
+  "ptSacrificeDesc": "Give up material for a bigger gain",
+  "ptSkewer": "Skewer",
+  "ptSkewerDesc": "Attack a valuable piece; when it moves, the one behind it falls",
+  "ptTrappedPiece": "Trapped piece",
+  "ptTrappedPieceDesc": "A piece with nowhere to go",
+  "ptAttraction": "Attraction",
+  "ptAttractionDesc": "Lure a piece to a square where it gets hit",
+  "ptClearance": "Clearance",
+  "ptClearanceDesc": "Clear a square, file or diagonal for another piece",
+  "ptCollinearMove": "Collinear move",
+  "ptCollinearMoveDesc": "Two pieces face each other on a line; one slides along it without taking",
+  "ptDiscoveredCheck": "Discovered check",
+  "ptDiscoveredCheckDesc": "Move a piece to uncover a check by another",
+  "ptDefensiveMove": "Defensive move",
+  "ptDefensiveMoveDesc": "The one move that avoids a loss",
+  "ptDeflection": "Deflection",
+  "ptDeflectionDesc": "Draw a piece away from a duty, such as guarding a square",
+  "ptInterference": "Interference",
+  "ptInterferenceDesc": "Put a piece between two enemy pieces so one loses its guard",
+  "ptIntermezzo": "Intermezzo",
+  "ptIntermezzoDesc": "An unexpected move before the obvious one",
+  "ptQuietMove": "Quiet move",
+  "ptQuietMoveDesc": "No check or capture, yet it sets up an unstoppable threat",
+  "ptXRayAttack": "X-ray attack",
+  "ptXRayAttackDesc": "A piece attacks or defends through an enemy piece",
+  "ptZugzwang": "Zugzwang",
+  "ptZugzwangDesc": "The opponent must move, and every move makes it worse",
+  "ptMate": "Checkmate",
+  "ptMateDesc": "Finish the game with mate",
+  "ptMateIn1": "Mate in 1",
+  "ptMateIn1Desc": "Deliver mate in one move",
+  "ptMateIn2": "Mate in 2",
+  "ptMateIn2Desc": "Deliver mate in two moves",
+  "ptMateIn3": "Mate in 3",
+  "ptMateIn3Desc": "Deliver mate in three moves",
+  "ptMateIn4": "Mate in 4",
+  "ptMateIn4Desc": "Deliver mate in four moves",
+  "ptMateIn5": "Mate in 5 or more",
+  "ptMateIn5Desc": "A long road to mate",
+  "ptAnastasiaMate": "Anastasia's mate",
+  "ptAnastasiaMateDesc": "Knight and rook or queen trap the king between the edge and its own piece",
+  "ptArabianMate": "Arabian mate",
+  "ptArabianMateDesc": "Knight and rook mate the king in the corner",
+  "ptBackRankMate": "Back rank mate",
+  "ptBackRankMateDesc": "Mate on the home rank, the king hemmed in by its own pawns",
+  "ptBalestraMate": "Balestra mate",
+  "ptBalestraMateDesc": "A bishop mates while the queen covers the escape squares",
+  "ptBlindSwineMate": "Blind swine mate",
+  "ptBlindSwineMateDesc": "Two rooks on the seventh rank mate the king",
+  "ptBodenMate": "Boden's mate",
+  "ptBodenMateDesc": "Two bishops on crossing diagonals mate a king boxed in by its own pieces",
+  "ptCornerMate": "Corner mate",
+  "ptCornerMateDesc": "A rook or queen holds the king in the corner, a knight mates",
+  "ptDoubleBishopMate": "Double bishop mate",
+  "ptDoubleBishopMateDesc": "Two bishops on neighbouring diagonals mate",
+  "ptDovetailMate": "Dovetail mate",
+  "ptDovetailMateDesc": "The queen mates next to the king; its own pieces block both escapes",
+  "ptEpauletteMate": "Epaulette mate",
+  "ptEpauletteMateDesc": "Pieces on both sides of the king take away its escape",
+  "ptHookMate": "Hook mate",
+  "ptHookMateDesc": "Rook, knight and pawn mate together",
+  "ptKillBoxMate": "Kill box mate",
+  "ptKillBoxMateDesc": "A rook next to the king, backed by the queen, traps it in a box",
+  "ptPillsburysMate": "Pillsbury's mate",
+  "ptPillsburysMateDesc": "A rook mates, a bishop helps hem the king in",
+  "ptMorphysMate": "Morphy's mate",
+  "ptMorphysMateDesc": "A bishop mates, a rook helps hem the king in",
+  "ptOperaMate": "Opera mate",
+  "ptOperaMateDesc": "A rook mates on the back rank, guarded by a bishop",
+  "ptSwallowstailMate": "Swallow's tail mate",
+  "ptSwallowstailMateDesc": "The queen mates face to face; the squares behind the king are blocked",
+  "ptTriangleMate": "Triangle mate",
+  "ptTriangleMateDesc": "Queen and rook, one square from the king, form a triangle",
+  "ptVukovicMate": "Vuković mate",
+  "ptVukovicMateDesc": "A rook mates with support, a knight covers the escapes",
+  "ptSmotheredMate": "Smothered mate",
+  "ptSmotheredMateDesc": "A knight mates a king surrounded by its own pieces",
+  "ptCastling": "Castling",
+  "ptCastlingDesc": "Bring the king to safety and the rook into play",
+  "ptEnPassant": "En passant",
+  "ptEnPassantDesc": "Take a pawn that has just moved two squares",
+  "ptPromotion": "Promotion",
+  "ptPromotionDesc": "Turn a pawn into a queen or another piece",
+  "ptUnderPromotion": "Underpromotion",
+  "ptUnderPromotionDesc": "Promote to a knight, bishop or rook",
+  "ptEquality": "Equality",
+  "ptEqualityDesc": "Come back from a worse position to an equal one",
+  "ptAdvantage": "Advantage",
+  "ptAdvantageDesc": "Get a clear advantage",
+  "ptCrushing": "Crushing",
+  "ptCrushingDesc": "Find the move that wins",
+  "ptOneMove": "One move",
+  "ptOneMoveDesc": "Puzzles one move long",
+  "ptShort": "Short",
+  "ptShortDesc": "Two moves to win",
+  "ptLong": "Long",
+  "ptLongDesc": "Three moves to win",
+  "ptVeryLong": "Very long",
+  "ptVeryLongDesc": "Four moves or more",
+  "ptMaster": "Master games",
+  "ptMasterDesc": "From games of titled players",
+  "ptMasterVsMaster": "Master vs master",
+  "ptMasterVsMasterDesc": "From games between two titled players",
+  "ptSuperGM": "Super GM games",
+  "ptSuperGMDesc": "From games of the world's best players"
 }

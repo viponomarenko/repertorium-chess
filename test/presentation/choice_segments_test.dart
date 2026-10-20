@@ -46,10 +46,10 @@ void main() {
 
   const sizes = ['Малий', 'Звичайний', 'Великий'];
 
-  testWidgets('short labels on a wide screen: segments with a check mark', (tester) async {
+  testWidgets('short labels on a wide screen: a capsule, no chips (D-122)', (tester) async {
     await pump(tester, width: 700, scale: 1, labels: sizes);
-    expect(find.byType(SegmentedButton<int>), findsOneWidget);
-    expect(tester.widget<SegmentedButton<int>>(find.byType(SegmentedButton<int>)).showSelectedIcon, isTrue);
+    expect(find.byType(SegmentCapsule<int>), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNothing);
     expectSingleLineLabels(tester, sizes);
   });
 
@@ -66,7 +66,7 @@ void main() {
   testWidgets('long labels fall back to chips', (tester) async {
     const labels = ['Залишити старі', 'Замінити', 'Обʼєднати'];
     await pump(tester, width: 320, scale: 2, labels: labels);
-    expect(find.byType(SegmentedButton<int>), findsNothing);
+    expect(find.byType(SegmentCapsule<int>), findsNothing);
     expect(find.byType(ChoiceChip), findsNWidgets(3));
   });
 

@@ -29,15 +29,17 @@ class LichessStudiesScreen extends ConsumerWidget {
     final studies = ref.watch(_studiesProvider);
     final df = DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag());
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l.myStudies),
-        actions: [
-          IconButton(
-            tooltip: l.refresh,
-            onPressed: () => ref.invalidate(_studiesProvider),
-            icon: const Icon(AppIcons.refresh),
-          ),
-        ],
+      appBar: PageBar(
+        bar: AppBar(
+          title: Text(l.myStudies),
+          actions: [
+            IconButton(
+              tooltip: l.refresh,
+              onPressed: () => ref.invalidate(_studiesProvider),
+              icon: const Icon(AppIcons.refresh),
+            ),
+          ],
+        ),
       ),
       body: studies.when(
         loading: () => const LoadingView(),

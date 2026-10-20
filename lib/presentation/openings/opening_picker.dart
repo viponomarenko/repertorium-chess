@@ -33,6 +33,35 @@ class OpeningTile extends StatelessWidget {
   );
 }
 
+/// Shown first while nothing is searched: the main line of each opening
+/// people play most, instead of the catalog's alphabetical start (A00).
+const _popular = [
+  'Sicilian Defense',
+  'French Defense',
+  'Caro-Kann Defense',
+  'Italian Game',
+  'Ruy Lopez',
+  'Scotch Game',
+  'Scandinavian Defense',
+  'Pirc Defense',
+  "Queen's Gambit Declined",
+  "Queen's Gambit Accepted",
+  'Slav Defense',
+  'Catalan Opening',
+  "King's Indian Defense",
+  'Nimzo-Indian Defense',
+  'Grünfeld Defense',
+  'Dutch Defense',
+  'London System',
+  'English Opening',
+];
+
+/// The [_popular] openings found in [b], in that order (the picker and
+/// the catalog, D-119).
+List<OpeningInfo> popularOpenings(OpeningBook b) => [
+  for (final name in _popular) ?b.search(name, limit: 50).where((o) => o.name == name).firstOrNull,
+];
+
 /// The catalog of openings as a sheet with a search; returns the opening
 /// tapped (a start position without typing moves or a FEN, D-088).
 Future<OpeningInfo?> showOpeningPicker(BuildContext context) => showAppSheet<OpeningInfo>(
@@ -55,33 +84,6 @@ class _OpeningPickerState extends ConsumerState<_OpeningPicker> {
   static const double _share = 0.75;
 
   String _q = '';
-
-  /// Shown first while nothing is searched: the main line of each opening
-  /// people play most, instead of the catalog's alphabetical start (A00).
-  static const _popular = [
-    'Sicilian Defense',
-    'French Defense',
-    'Caro-Kann Defense',
-    'Italian Game',
-    'Ruy Lopez',
-    'Scotch Game',
-    'Scandinavian Defense',
-    'Pirc Defense',
-    "Queen's Gambit Declined",
-    "Queen's Gambit Accepted",
-    'Slav Defense',
-    'Catalan Opening',
-    "King's Indian Defense",
-    'Nimzo-Indian Defense',
-    'Grünfeld Defense',
-    'Dutch Defense',
-    'London System',
-    'English Opening',
-  ];
-
-  List<OpeningInfo> _popularIn(OpeningBook b) => [
-    for (final name in _popular) ?b.search(name, limit: 50).where((o) => o.name == name).firstOrNull,
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +111,7 @@ class _OpeningPickerState extends ConsumerState<_OpeningPicker> {
               ),
               data: (b) {
                 final results = b.search(_q, limit: 300);
-                final popular = _q.trim().isEmpty ? _popularIn(b) : const <OpeningInfo>[];
+                final popular = _q.trim().isEmpty ? popularOpenings(b) : const <OpeningInfo>[];
                 Widget tile(OpeningInfo o) => OpeningTile(opening: o, onTap: () => Navigator.pop(context, o));
                 return CustomScrollView(
                   keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,

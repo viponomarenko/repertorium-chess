@@ -26,9 +26,20 @@ import '../training/training_args.dart';
 import '../widgets/common.dart';
 import '../widgets/errors.dart';
 
+/// A source to open right away, from the import tiles of the Library (D-104).
+enum ImportStart { file, clipboard, link }
+
 /// What to import. Empty = let the user choose a source.
 class ImportInput {
-  const ImportInput({this.bytes, this.text, this.fileName, this.url, this.targetCollectionId, this.targetRepertoireId});
+  const ImportInput({
+    this.bytes,
+    this.text,
+    this.fileName,
+    this.url,
+    this.targetCollectionId,
+    this.targetRepertoireId,
+    this.start,
+  });
   final Uint8List? bytes;
   final String? text;
   final String? fileName;
@@ -37,6 +48,9 @@ class ImportInput {
 
   /// Started from a repertoire: adding to it is the primary action.
   final int? targetRepertoireId;
+
+  /// Nothing to import yet: open this source at once.
+  final ImportStart? start;
 
   bool get isEmpty => bytes == null && (text == null || text!.trim().isEmpty) && url == null;
 }
@@ -79,7 +93,21 @@ class _ImportFlowScreenState extends ConsumerState<ImportFlowScreen> {
   void initState() {
     super.initState();
     _targetCollection = widget.input.targetCollectionId;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _start(widget.input));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.input.isEmpty) {
+        switch (widget.input.start) {
+          case ImportStart.file:
+            unawaited(_pickFile());
+          case ImportStart.clipboard:
+            unawaited(_paste());
+          case ImportStart.link:
+            unawaited(_askUrl());
+          case null:
+        }
+        return;
+      }
+      _start(widget.input);
+    });
   }
 
   @override
@@ -391,17 +419,19 @@ class _ImportFlowScreenState extends ConsumerState<ImportFlowScreen> {
         if (!didPop && !_saving) _backToSources();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(l.importTitle),
-          leading: _report != null || _parsing ? BackButton(onPressed: _saving ? null : _backToSources) : null,
-          actions: [
-            if (_report != null && _text != null)
-              IconButton(
-                tooltip: l.editImportText,
-                icon: const Icon(AppIcons.typeMove),
-                onPressed: _saving ? null : _typeText,
-              ),
-          ],
+        appBar: PageBar(
+          bar: AppBar(
+            title: Text(l.importTitle),
+            leading: _report != null || _parsing ? BackButton(onPressed: _saving ? null : _backToSources) : null,
+            actions: [
+              if (_report != null && _text != null)
+                IconButton(
+                  tooltip: l.editImportText,
+                  icon: const Icon(AppIcons.typeMove),
+                  onPressed: _saving ? null : _typeText,
+                ),
+            ],
+          ),
         ),
         body: _parsing
             ? _ParsingView(

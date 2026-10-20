@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io' show gzip;
+import 'dart:isolate';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +15,8 @@ import '../../data/repositories/library_repository.dart';
 import '../../data/repositories/repertoire_repository.dart';
 import '../../data/settings/app_settings.dart';
 import '../../domain/openings/opening_book.dart';
+import '../../domain/openings/position_text_book.dart';
+import '../../domain/position_info/structures.dart';
 import '../../domain/srs/fsrs.dart';
 
 /// Overridden in main() with the opened database.
@@ -86,6 +92,32 @@ final openingBookProvider = FutureProvider<OpeningBook>((ref) async {
   return OpeningBook.parseTsv(tsv);
 });
 
+/// Wikibooks texts about opening positions (D-106), unpacked off the UI
+/// thread; empty when the file is missing.
+final positionTextsProvider = FutureProvider<PositionTextBook>((ref) async {
+  final ByteData data;
+  try {
+    data = await rootBundle.load('assets/wikibooks/texts.json.gz');
+  } catch (_) {
+    return PositionTextBook.empty;
+  }
+  final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+  return Isolate.run(
+    () => PositionTextBook.fromJson(jsonDecode(utf8.decode(gzip.decode(bytes))) as Map<String, dynamic>),
+  );
+});
+
+/// The catalogue of pawn structures (D-107).
+final structuresProvider = FutureProvider<StructureCatalog>((ref) async {
+  try {
+    // Uncached: read once, and a cached future would outlive a test's zone.
+    final json = await rootBundle.loadString('assets/structures/structures.json', cache: false);
+    return StructureCatalog.fromJson(jsonDecode(json) as Map<String, dynamic>);
+  } catch (_) {
+    return StructureCatalog.empty;
+  }
+});
+
 /// Opening book as a sendable map for background parsing (ECO detection).
 final openingMapProvider = Provider<Map<String, List<String>>>((ref) {
   final book = ref.watch(openingBookProvider).value;
@@ -131,6 +163,11 @@ final repertoiresProvider = StreamProvider<List<RepertoireSummary>>((ref) {
   ref.watch(refreshTickProvider);
   return ref.watch(repertoireRepositoryProvider).watchSummaries();
 });
+
+/// The start of a repertoire's main line, shown on its card (D-104).
+final firstMovesProvider = StreamProvider.family<FirstMoves, int>(
+  (ref, id) => ref.watch(repertoireRepositoryProvider).watchFirstMoves(id),
+);
 
 final streakProvider = FutureProvider<int>((ref) {
   ref.watch(refreshTickProvider);

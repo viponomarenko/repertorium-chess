@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'core/window_controls.dart';
 import 'data/db/database.dart';
 import 'presentation/accounts/accounts_providers.dart';
 import 'presentation/app/app.dart';
@@ -53,4 +54,6 @@ Future<void> main() async {
   unawaited(ChessgroundImages.instance.loadAll(BoardAppearance.pieceSet(settings.pieceSet).assets));
   unawaited(container.read(openingBookProvider.future));
   runApp(UncontrolledProviderScope(container: container, child: const TabiyaApp()));
+  // The native view exists once the first frame is drawn.
+  WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(WindowControls.start()));
 }

@@ -53,7 +53,7 @@ void main() {
     await tester.tap(find.byType(BarButton).at(1));
     await settle(tester);
     expect(find.text('Білі: основи 1.e4'), findsWidgets);
-    expect(find.text('Новий'), findsOneWidget);
+    expect(find.text('Створити'), findsOneWidget);
     await app.close(tester);
   });
 
@@ -70,6 +70,11 @@ void main() {
       final tile = rectOf(tester, find.byType(ListTile));
       expect(tile.width, lessThanOrEqualTo(AppSizes.maxContentWidth), reason: route);
       expect((tile.center.dx - 1376 / 2).abs(), lessThan(1), reason: '$route is centred');
+      // The bar keeps to the same column: the back button is over the
+      // list, not at the edge of the screen (D-103).
+      final back = rectOf(tester, find.byType(BackButton));
+      expect(back.left, greaterThanOrEqualTo(tile.left - AppSpacing.lg), reason: route);
+      expect(back.left, lessThan(tile.left + AppSpacing.lg), reason: route);
     }
     // The list itself takes the whole width: it scrolls from the margins.
     expect(rectOf(tester, find.byType(ListView)).width, 1376);

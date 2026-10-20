@@ -62,7 +62,7 @@ void main() {
       final explanation = find.byWidgetPredicate((w) => w is MovesText && w.text == comment);
       expect(explanation, findsOneWidget);
       final widget = tester.widget<MovesText>(explanation);
-      final background = Theme.of(tester.element(explanation)).colorScheme.primaryContainer;
+      final background = Theme.of(tester.element(explanation)).colorScheme.surfaceContainerLow;
       expect(contrastRatio(widget.style!.color!, background), greaterThanOrEqualTo(4.5));
       expectClean(tester);
       await app.close(tester);

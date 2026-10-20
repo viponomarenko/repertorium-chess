@@ -20,6 +20,19 @@ class OpeningInfo {
   int get ply => moves.length;
 }
 
+/// One family of the catalog: its name and its lines.
+class OpeningFamily {
+  OpeningFamily(this.name, this.lines);
+  final String name;
+  final List<OpeningInfo> lines;
+
+  String get firstEco => lines.map((o) => o.eco).reduce((a, b) => a.compareTo(b) <= 0 ? a : b);
+  String get lastEco => lines.map((o) => o.eco).reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
+
+  /// "B20-B99", or one code.
+  String get ecoRange => firstEco == lastEco ? firstEco : '$firstEco-$lastEco';
+}
+
 class OpeningBook {
   OpeningBook(Iterable<OpeningInfo> entries) {
     for (final e in entries) {
@@ -59,6 +72,26 @@ class OpeningBook {
       if (o != null) return o;
     }
     return null;
+  }
+
+  /// The families of the catalog (D-119), each under the ECO letter of
+  /// its first line: "Sicilian Defense" with all its lines in catalog
+  /// order. Families of a letter come in the order of their first code.
+  Map<String, List<OpeningFamily>> familiesByLetter() {
+    final byName = <String, List<OpeningInfo>>{};
+    for (final o in _all) {
+      (byName[o.family] ??= []).add(o);
+    }
+    final out = <String, List<OpeningFamily>>{};
+    for (final e in byName.entries) {
+      final lines = e.value;
+      final first = lines.reduce((a, b) => a.eco.compareTo(b.eco) <= 0 ? a : b);
+      (out[first.eco.substring(0, 1)] ??= []).add(OpeningFamily(e.key, lines));
+    }
+    for (final list in out.values) {
+      list.sort((a, b) => a.firstEco != b.firstEco ? a.firstEco.compareTo(b.firstEco) : a.name.compareTo(b.name));
+    }
+    return out;
   }
 
   /// Search by name or ECO code (F-THEORY-02).

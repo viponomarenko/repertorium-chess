@@ -161,7 +161,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       // The database is being rewritten: stay until it is done.
       canPop: !_busy,
       child: Scaffold(
-        appBar: AppBar(title: Text(l.backupTitle)),
+        appBar: PageBar(bar: AppBar(title: Text(l.backupTitle))),
         body: AbsorbPointer(
           absorbing: _busy,
           child: ListView(

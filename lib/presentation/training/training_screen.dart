@@ -21,9 +21,11 @@ import '../../domain/training/opponent_strategy.dart';
 import '../../domain/training/training_engine.dart';
 import '../accounts/accounts_providers.dart';
 import '../app/providers.dart';
+import '../position_info/position_info_sheet.dart';
 import '../theme/app_icons.dart';
 import '../widgets/board_layout.dart';
 import '../widgets/board_view.dart';
+import '../widgets/comment_text.dart';
 import '../widgets/common.dart';
 import '../widgets/engine_panel.dart';
 import '../widgets/notation_view.dart';
@@ -52,6 +54,9 @@ class TrainingScreen extends ConsumerStatefulWidget {
 }
 
 class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBindingObserver {
+  /// Room for the answer buttons in one row of equal buttons.
+  static const double _actionsRowWidth = 480;
+
   /// The part of the session being played (see [TrainingArgs.staged]).
   int _stageIndex = 0;
   late final List<TrainingStage> _stages = widget.args.allStages;
@@ -61,7 +66,12 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
 
   /// What was already answered when the current part began: the progress
   /// in the header counts the part, not the whole session.
-  int _baseReviewed = 0, _baseIntroduced = 0, _baseLines = 0;
+  int _baseReviewed = 0, _baseIntroduced = 0, _baseLines = 0, _baseShown = 0;
+
+  /// New moves shown (played after the demonstration) in this session: the
+  /// light part of the progress bar, so that it moves from the first move
+  /// although a new move counts only once recalled without hints (D-115).
+  int _shown = 0;
 
   /// The next part has just begun: say so once its first line starts.
   bool _announceStage = false;
@@ -90,7 +100,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
 
   /// True once the user answered anything (leaving before that needs no
   /// confirmation).
-  bool _answered = false;
   int _remainingNew = 0;
   int _remainingReviews = 0;
   final SessionSummary _total = SessionSummary();
@@ -212,6 +221,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
     _baseReviewed = _total.reviewed;
     _baseIntroduced = _total.introduced;
     _baseLines = _total.lines;
+    _baseShown = _shown;
   }
 
   /// New moves in the trained repertoires (for "Learn new lines").
@@ -231,6 +241,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
     };
     return (math.min(done, planned), planned);
   }
+
+  /// Of [_progress]'s plan: new moves already shown, not yet recalled.
+  int get _shownProgress =>
+      _mode == TrainingMode.learn && widget.args.startKey == null ? _shown - _baseShown : 0;
 
   void _onWriteError() {
     if (_writeErrorShown || !mounted) return;
@@ -464,8 +478,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
     final s = ref.read(settingsProvider);
     final sound = ref.read(soundServiceProvider);
     _sw.stop();
+    final demo = step.demo;
     final r = e.submitMove(move, responseTime: _sw.elapsed);
-    _answered = true;
+    if (demo && r.verdict == MoveVerdict.correct) _shown++;
     final norm = normalizeMove(_position!, move);
     final dest = Move.parse(standardUci(_position!, norm))?.to;
     switch (r.verdict) {
@@ -574,19 +589,53 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
     return null;
   }
 
-  Future<void> _why([LineMove? move]) async {
+  Future<void> _why([LineMove? move, bool lineDone = false]) async {
     final e = _engine;
     if (e == null || e.line.isEmpty) return;
     final last = move ?? _lastUserMove ?? e.line.last;
     final book = ref.read(openingBookProvider).value;
     final keys = [e.startKey, for (final m in e.line) positionKeyOf(positionFromFen(m.fenBefore))];
     final opening = book?.deepest(keys);
-    await _pausingClock(
-      () => showAppModal<void>(
+    final about = await _pausingClock(
+      () => showAppModal<bool>(
         context,
-        builder: (ctx) => _WhySheet(move: last, openingName: opening == null ? null : '${opening.eco} ${opening.name}'),
+        builder: (ctx) => _WhySheet(
+          move: last,
+          openingName: opening == null ? null : '${opening.eco} ${opening.name}',
+          // Only once the line is over: the panel may name the next move.
+          canAbout: lineDone,
+        ),
       ),
     );
+    if (about == true && mounted) await _positionInfo(last.fenBefore);
+  }
+
+  /// "About this position" (D-105) for [fen], a position of the finished
+  /// line; never while the line is still being played.
+  Future<void> _positionInfo(String fen) async {
+    final e = _engine;
+    if (e == null) return;
+    final key = keyFromFen(fen);
+    final keys = [e.startKey];
+    for (final m in e.line) {
+      final k = positionKeyOf(positionFromFen(m.fenBefore));
+      if (k != keys.last) keys.add(k);
+      if (k == key) break;
+    }
+    if (keys.last != key) keys.add(key);
+    await showPositionInfo(
+      context,
+      PositionInfoArgs(fen: fen, lineKeys: keys, engineAllowed: ref.read(settingsProvider).engineInTraining),
+    );
+  }
+
+  /// The position the finished line ends in.
+  String? _finalFen() {
+    final line = _engine?.line;
+    if (line == null || line.isEmpty) return null;
+    final pos = positionFromFen(line.last.fenBefore);
+    final m = parseUciMove(pos, line.last.uci);
+    return m == null ? null : pos.play(m).fen;
   }
 
   /// Time spent reading a sheet must not count as thinking time (grading
@@ -724,11 +773,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
     return _stageIndex >= _stages.length - 1 && _repIndex >= _ids.length - 1 && !e.hasNextLine;
   }
 
-  Future<bool> _confirmExit() async {
-    if (_allDone || _engine == null || !_answered) return true;
-    final l = context.l10n;
-    return confirm(context, title: l.exitTrainingQ, message: l.exitTrainingMessage, confirmLabel: l.exit);
-  }
 
   // ------------------------------------------------------------ build
 
@@ -737,11 +781,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
     final l = context.l10n;
     final modeName = modeTitle(_mode, l);
     final progress = _progress;
+    // Every answer is saved as it is given: Back leaves at once, without
+    // a question (D-118). A stray swipe from the edge still does not end
+    // the session (D-101).
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        if (await _confirmExit() && context.mounted) context.pop();
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.pop();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -761,9 +807,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
                   preferredSize: const Size.fromHeight(_progressHeight),
                   child: Semantics(
                     label: l.progressOf(progress.$1, progress.$2),
-                    child: AnimatedFraction(
-                      value: progress.$1 / progress.$2,
-                      builder: (_, v) => LinearProgressIndicator(value: v, minHeight: _progressHeight),
+                    child: _SessionProgress(
+                      done: progress.$1 / progress.$2,
+                      shown: math.min(_shownProgress, progress.$2) / progress.$2,
                     ),
                   ),
                 ),
@@ -845,7 +891,11 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
             summary: step.summary,
             last: _isLastLine,
             onNext: _nextLine,
-            onWhy: _why,
+            onWhy: (m) => _why(m, true),
+            onAbout: () {
+              final fen = _finalFen();
+              if (fen != null) unawaited(_positionInfo(fen));
+            },
             engineWhy: ref.watch(settingsProvider).engineInTraining,
           )
         : _statusPanel(context, awaiting);
@@ -854,6 +904,25 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
     return SafeArea(
       child: BoardLayout(board: board, extraBelow: (_) => _feedbackRoom, below: (context, g) => panel),
     );
+  }
+
+  /// The last moves of the current line as notation ("1. e4 e5 2. ?"), the
+  /// move to find marked with a question; null before the first move.
+  String? _lineSoFar(bool awaiting) {
+    final e = _engine;
+    final pos = _position;
+    if (e == null || pos == null || e.line.isEmpty) return null;
+    const keep = 8;
+    final moves = e.line.length > keep ? e.line.sublist(e.line.length - keep) : e.line;
+    final out = <String>[if (moves.length < e.line.length) '…'];
+    for (final (i, m) in moves.indexed) {
+      final f = m.fenBefore.split(' ');
+      final white = f.length < 2 || f[1] == 'w';
+      final n = f.length > 5 ? f[5] : '';
+      out.add(white ? '$n. ${m.san}' : (i == 0 ? '$n... ${m.san}' : m.san));
+    }
+    if (awaiting) out.add(pos.turn == Side.white ? '${pos.fullmoves}. ?' : '?');
+    return out.join(' ');
   }
 
   Widget _statusPanel(BuildContext context, bool awaiting) {
@@ -868,12 +937,30 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
         theme.colorScheme.onSecondaryContainer,
         AppIcons.alternativeMove,
       ),
-      _Feedback.demo => (theme.colorScheme.primaryContainer, theme.colorScheme.onPrimaryContainer, AppIcons.show),
+      // A quiet white card: the board, not the instruction, is what to
+      // look at (D-115).
+      _Feedback.demo => (theme.colorScheme.surfaceContainerLow, theme.colorScheme.onSurface, AppIcons.show),
       _Feedback.none => (theme.colorScheme.surfaceContainerHigh, theme.colorScheme.onSurface, AppIcons.yourMove),
     };
+    final line = _lineSoFar(awaiting);
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
+        // Where the line stands: the moves so far and the one to find.
+        if (line != null) ...[
+          Semantics(
+            label: l.lineSoFar(line),
+            excludeSemantics: true,
+            child: MovesText(
+              line,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: context.tt.body.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+          AppGap.v8,
+        ],
         Semantics(
           liveRegion: true,
           // A wrong answer shakes the card; the verdict's icon pops in; a
@@ -906,7 +993,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
                     ),
                     if (_comment.isNotEmpty) ...[
                       AppGap.v8,
-                      MovesText(_comment, style: context.tt.comment.copyWith(color: fg)),
+                      CommentText(_comment, color: fg),
                     ],
                   ],
                 ),
@@ -915,45 +1002,97 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> with WidgetsBin
           ),
         ),
         AppGap.v12,
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          alignment: WrapAlignment.center,
-          children: [
-            if (awaiting && !(_step as AwaitUser).demo) ...[
-              OutlinedButton.icon(
-                onPressed: (_hint?.level ?? 0) >= 3 || _revealed ? null : _requestHint,
-                icon: const Icon(AppIcons.hint),
-                label: Text(l.hint),
-              ),
-              OutlinedButton.icon(
-                onPressed: _revealed ? null : _reveal,
-                icon: const Icon(AppIcons.show),
-                label: Text(l.showAnswer),
-              ),
-            ],
-            if (awaiting)
-              OutlinedButton.icon(onPressed: _typeMove, icon: const Icon(AppIcons.typeMove), label: Text(l.enterMove)),
-          ],
+        LayoutBuilder(
+          builder: (context, c) {
+            final buttons = <Widget>[
+              if (awaiting && !(_step as AwaitUser).demo) ...[
+                OutlinedButton.icon(
+                  onPressed: (_hint?.level ?? 0) >= 3 || _revealed ? null : _requestHint,
+                  icon: const Icon(AppIcons.hint),
+                  label: Text(l.hint),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _revealed ? null : _reveal,
+                  icon: const Icon(AppIcons.show),
+                  label: Text(l.showAnswer),
+                ),
+              ],
+              if (awaiting)
+                OutlinedButton.icon(
+                  onPressed: _typeMove,
+                  icon: const Icon(AppIcons.typeMove),
+                  label: Text(l.enterMove),
+                ),
+              // The explanation of the previous move stays available until
+              // the next answer, in the same row (D-115).
+              if (lastUser != null)
+                TextButton.icon(
+                  onPressed: () => _why(lastUser),
+                  icon: const Icon(AppIcons.help),
+                  label: MovesText(l.whyMove(lastUser.san)),
+                ),
+            ];
+            // Beside the board on a tablet: one row of equal buttons, not
+            // two and one left over in the middle.
+            if (c.maxWidth >= _actionsRowWidth && buttons.length > 1) {
+              return Row(
+                children: [
+                  for (var i = 0; i < buttons.length; i++) ...[if (i > 0) AppGap.h8, Expanded(child: buttons[i])],
+                ],
+              );
+            }
+            return Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              alignment: WrapAlignment.center,
+              children: buttons,
+            );
+          },
         ),
-        // The explanation of the previous move stays available until the
-        // next answer (not only for a moment after it).
-        if (lastUser != null) ...[
-          AppGap.v4,
-          Center(
-            child: TextButton.icon(
-              onPressed: () => _why(lastUser),
-              icon: const Icon(AppIcons.help),
-              label: MovesText(l.whyMove(lastUser.san)),
-            ),
-          ),
-        ],
         if (awaiting && (_step as AwaitUser).isNewCard && !(_step as AwaitUser).demo)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.md),
             child: Text(l.newCardRecall, textAlign: TextAlign.center, style: context.tt.meta),
           ),
       ],
+    );
+  }
+}
+
+/// The progress line under the app bar: answers done in ink, and in learn
+/// mode the new moves already shown as a lighter part ahead of it (D-115).
+class _SessionProgress extends StatelessWidget {
+  const _SessionProgress({required this.done, required this.shown});
+  final double done;
+  final double shown;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return AnimatedFraction(
+      value: done,
+      builder: (_, d) => AnimatedFraction(
+        value: math.max(shown, done),
+        builder: (_, sh) => SizedBox(
+          height: _progressHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ColoredBox(color: cs.surfaceContainerHighest),
+              FractionallySizedBox(
+                alignment: AlignmentDirectional.centerStart,
+                widthFactor: sh.clamp(0.0, 1.0),
+                child: ColoredBox(color: cs.primary.withValues(alpha: AppOpacity.disabled)),
+              ),
+              FractionallySizedBox(
+                alignment: AlignmentDirectional.centerStart,
+                widthFactor: d.clamp(0.0, 1.0),
+                child: ColoredBox(color: cs.primary),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -978,6 +1117,7 @@ class _LineSummary extends StatelessWidget {
     required this.last,
     required this.onNext,
     required this.onWhy,
+    required this.onAbout,
     required this.engineWhy,
   });
   final LineSummary summary;
@@ -986,6 +1126,7 @@ class _LineSummary extends StatelessWidget {
   final bool last;
   final VoidCallback onNext;
   final void Function(LineMove move) onWhy;
+  final VoidCallback onAbout;
   final bool engineWhy;
 
   @override
@@ -1017,6 +1158,12 @@ class _LineSummary extends StatelessWidget {
           onPressed: onNext,
           icon: Icon(last ? AppIcons.check : AppIcons.nextGame),
           label: Text(last ? l.finishSession : l.nextLine),
+        ),
+        AppGap.v8,
+        OutlinedButton.icon(
+          onPressed: onAbout,
+          icon: const Icon(AppIcons.info),
+          label: Text(l.aboutFinalPosition),
         ),
         AppGap.v8,
         AppExpansionTile(
@@ -1086,9 +1233,13 @@ class _LineMoveChip extends StatelessWidget {
 }
 
 class _WhySheet extends ConsumerStatefulWidget {
-  const _WhySheet({required this.move, this.openingName});
+  const _WhySheet({required this.move, this.openingName, this.canAbout = false});
   final LineMove move;
   final String? openingName;
+
+  /// Offers "About this position" for the position before the move
+  /// (closes with true).
+  final bool canAbout;
 
   @override
   ConsumerState<_WhySheet> createState() => _WhySheetState();
@@ -1159,6 +1310,14 @@ class _WhySheetState extends ConsumerState<_WhySheet> {
                       ? Icon(AppIcons.check, color: theme.colorScheme.success)
                       : null,
                 ),
+            ],
+            if (widget.canAbout) ...[
+              AppGap.v8,
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).pop(true),
+                icon: const Icon(AppIcons.info),
+                label: Text(l.aboutPosition),
+              ),
             ],
           ],
         ),

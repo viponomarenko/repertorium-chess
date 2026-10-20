@@ -139,8 +139,8 @@ s('stageReviewCount', en_pl('count', '{count} to review', '{count} to review'),
   uk_pl('count', '{count} повторення', '{count} повторення', '{count} повторень'), count=I)
 s('stageProblemsCount', en_pl('count', '{count} frequent mistake', '{count} frequent mistakes'),
   uk_pl('count', '{count} часта помилка', '{count} часті помилки', '{count} частих помилок'), count=I)
-s('stageNewCount', en_pl('count', '{count} new', '{count} new'),
-  uk_pl('count', '{count} новий', '{count} нові', '{count} нових', '{count} нового'), count=I)
+s('stageNewCount', en_pl('count', '{count} new move', '{count} new moves'),
+  uk_pl('count', '{count} новий хід', '{count} нові ходи', '{count} нових ходів', '{count} нового ходу'), count=I)
 
 # ---- grading without a hidden clock (D-066)
 s('timedGrading', 'Take the answer time into account', 'Зважати на час відповіді')
@@ -227,3 +227,78 @@ s('importShort', 'Import', 'Імпорт')
 s('trainFromHere', 'Train', 'Тренувати')
 s('trainFromHereLong', 'Train from here', 'Тренувати звідси')
 s('arrowsShort', 'Arrows', 'Стрілки')
+
+# ---- My games and the report after the first real Chess.com account (D-099)
+s('periodAll', 'All history', 'Уся історія')
+s('maxGames', 'At most ' + en_pl('count', '{count} new game', '{count} new games'),
+  'Не більше ' + uk_pl('count', '{count} нової партії', '{count} нових партій', '{count} нових партій'), count=I)
+s('syncDoneMore', 'Added ' + en_pl('count', '{count} game', '{count} games') + '. Not everything is downloaded yet: tap Download again.',
+  'Додано ' + uk_pl('count', '{count} партію', '{count} партії', '{count} партій') + '. Завантажено ще не все: натисніть «Завантажити» ще раз.',
+  count=I)
+s('disconnectChessComMessage', 'Downloaded games stay in My games. You can connect the account again at any time.',
+  'Завантажені партії залишаться в «Моїх партіях». Акаунт можна знову підключити будь-коли.')
+s('yesterday', 'Yesterday', 'Учора')
+s('bothColors', 'Both colors', 'Обома кольорами')
+s('allResults', 'All results', 'Усі результати')
+s('resultWins', 'Wins', 'Перемоги')
+s('resultLosses', 'Losses', 'Поразки')
+s('resultDraws', 'Draws', 'Нічиї')
+s('gamesSearchHint', 'Opponent or opening', 'Суперник або дебют')
+s('close', 'Close', 'Закрити')
+s('gapSectionForgot', 'You played off the repertoire', 'Ви зіграли не за репертуаром')
+s('gapHabitTitle', 'You usually play something else here', 'Тут ви зазвичай граєте інакше')
+s('gapHabitShare', '{count} of ' + en_pl('total', '{total} game {color}', '{total} games {color}'),
+  'У {count} з ' + uk_pl('total', '{total} партії', '{total} партій', '{total} партій') + ' {color}',
+  count=I, total=I, color=T)
+s('gapExpected', 'Repertoire: {move}', 'За репертуаром - {move}', move=T)
+s('gapNotInRepertoire', 'This move is not in the repertoire', 'Цього ходу немає в репертуарі')
+s('gapLineEnded', 'Your line ended here', 'Тут ваша лінія закінчилася')
+s('gapLearnMove', 'Learn {move}', 'Вчити {move}', move=T)
+s('gapAddMyMove', 'Add {move} to the repertoire', 'Додати {move} у репертуар', move=T)
+s('inSentenceAsWhite', 'as White', 'білими')
+s('inSentenceAsBlack', 'as Black', 'чорними')
+s('gapAddMove', 'Add {move}', 'Додати {move}', move=T)
+
+# ---- design handoff 17.10 (D-089…D-098): strings that were added straight to the ARB
+# files, and texts reworded there; the tables are the only source again (D-062).
+s('pickFromCatalog', 'Pick from the opening catalog', 'Обрати з каталогу дебютів')
+s('trainDueCount', 'Train: {count} to review', 'Тренуватись: {count} на повторення', count=I)
+s('popularOpenings', 'Popular', 'Популярні')
+s('allOpenings', 'All openings', 'Усі дебюти')
+s('otherShort', 'Modes', 'Режими')
+s('activitySummary', 'Days trained: {days} · answers: {total}', 'Днів з тренуванням: {days} · відповідей: {total}', days=I, total=I)
+s('legendBelowGoal', 'below goal', 'менше цілі')
+s('legendGoal', 'goal', 'ціль')
+s('todayShort', 'today', 'сьогодні')
+s('engineApply', 'Make {san} main', 'Зробити основним {san}', san=T)
+s('engineKeepMine', 'Keep my move', 'Залишити мій хід')
+s('engineApplied', '{best} is main now; {old} is an alternative', '{best} тепер основний; {old} - альтернатива', best=T, old=T)
+s('engineKept', 'Flag cleared: {san} stays the main move', 'Позначку знято: {san} лишається основним', san=T)
+s('weekAnswersTotal', '{count, plural, one{{count} answer this week} other{{count} answers this week}}', '{count, plural, one{{count} відповідь за тиждень} few{{count} відповіді за тиждень} many{{count} відповідей за тиждень} other{{count} відповіді за тиждень}}', count=I)
+s('statLearnedCaption', 'Learned', 'Вивчено')
+s('learnedOfTotal', '{learned} of {total, plural, one{{total} move} other{{total} moves}}', '{learned} з {total, plural, one{{total} ходу} few{{total} ходів} many{{total} ходів} other{{total} ходу}}', learned=I, total=I)
+s('forecastNext7Short', 'in 7 days', 'за 7 днів')
+s('forecastSummaryAvg', 'Today {today} · {avg} a day on average', 'Сьогодні {today} · у середньому {avg} на день', today=I, avg=T)
+s('forecastLegendWeek', 'next 7 days', 'найближчі 7 днів')
+s('forecastLegendLater', 'later', 'далі')
+s('answersCount', '{count, plural, one{{count} answer} other{{count} answers}}', '{count, plural, one{{count} відповідь} few{{count} відповіді} many{{count} відповідей} other{{count} відповіді}}', count=I)
+s('retentionTrendUp', 'This week {d} pp better than the 90-day average', 'За тиждень на {d} п. п. краще, ніж у середньому за 90 днів', d=I)
+s('retentionTrendDown', 'This week {d} pp worse than the 90-day average', 'За тиждень на {d} п. п. гірше, ніж у середньому за 90 днів', d=I)
+s('trainFromHereShort', 'From here', 'Звідси')
+s('problemsCount', '{count, plural, one{{count} problem} other{{count} problems}}', '{count, plural, one{{count} проблема} few{{count} проблеми} many{{count} проблем} other{{count} проблеми}}', count=I)
+s('opponentShareHeader', 'share', 'частка')
+s('retentionPeriod7', '7 days', '7 днів')
+s('retentionPeriod30', '30 days', '30 днів')
+s('retentionPeriod90', '90 days', '90 днів')
+s('navMore', 'More', 'Інше')
+s('undo', 'Undo', 'Скасувати')
+s('engineFlagHint', 'Engine prefers {best} (depth {depth}).', 'Рушій пропонує {best} (глибина {depth}).', best=T, depth=I)
+
+# ---- a downloaded game on the analysis screen (D-099)
+s('leftRepertoireAt', 'Left the repertoire: {move}', 'Вихід з репертуару: {move}', move=T)
+s('openOn', 'Open on {service}', 'Відкрити на {service}', service=T)
+s('deleteDownloadedGames', 'Also delete the downloaded games ({count})',
+  'Також видалити завантажені партії ({count})', count=I)
+s('updateNow', 'Update now', 'Оновити')
+s('disconnectChessComMessage', 'The downloaded games stay in My games unless you delete them. You can connect the account again at any time.',
+  'Завантажені партії лишаться в «Моїх партіях», якщо їх не видалити. Акаунт можна знову підключити будь-коли.')

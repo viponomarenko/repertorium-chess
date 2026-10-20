@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/haptics.dart';
 import '../../core/l10n.dart';
+import '../../core/window_controls.dart';
 import '../app/leave_guard.dart';
 import '../theme/app_icons.dart';
 import '../widgets/common.dart';
@@ -29,7 +32,7 @@ class AppShell extends StatelessWidget {
       (AppIcons.library, AppIcons.librarySelected, l.navLibrary),
       (AppIcons.more, AppIcons.more, l.navMore),
     ];
-    if (MediaQuery.sizeOf(context).width >= AppBreakpoints.wide) {
+    if (isWideLayout(context)) {
       // A tablet: the same buttons in a column at the side, where both
       // hands rest, and the whole height left to the page (D-084).
       return Scaffold(
@@ -43,14 +46,17 @@ class AppShell extends StatelessWidget {
                     selectedIcon: items[i].$2,
                     label: items[i].$3,
                     selected: shell.currentIndex == i,
+                    navigation: true,
                     onTap: () => _go(i),
                   ),
               ],
             ),
             const VerticalDivider(width: AppSizes.hairline),
             Expanded(
-              child: PageScope.measured(
-                child: FadeOnChange(trigger: shell.currentIndex, child: shell),
+              child: BesideWindowControls(
+                child: PageScope.measured(
+                  child: FadeOnChange(trigger: shell.currentIndex, child: shell),
+                ),
               ),
             ),
           ],
@@ -61,7 +67,7 @@ class AppShell extends StatelessWidget {
       // The tab that opens fades in; its state is kept.
       body: FadeOnChange(trigger: shell.currentIndex, child: shell),
       // Same bar as in the analysis: big labelled buttons, the current tab
-      // as a black rounded square.
+      // on a soft grey square (D-118).
       bottomNavigationBar: ThumbBar(
         children: [
           for (var i = 0; i < items.length; i++)
@@ -71,6 +77,7 @@ class AppShell extends StatelessWidget {
                 selectedIcon: items[i].$2,
                 label: items[i].$3,
                 selected: shell.currentIndex == i,
+                navigation: true,
                 onTap: () => _go(i),
               ),
             ),
@@ -94,17 +101,25 @@ class _SideRail extends StatelessWidget {
       child: SizedBox(
         width: AppSizes.railWidth,
         height: double.infinity,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final c in children)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                  child: c,
-                ),
-            ],
+        // The buttons stand in the middle of the height, where the hand
+        // rests; when they do not fit (large text) they scroll.
+        child: LayoutBuilder(
+          builder: (context, c) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: math.max(0, c.maxHeight - 2 * AppSpacing.sm)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < children.length; i++)
+                    Padding(
+                      padding: EdgeInsets.only(top: i == 0 ? 0 : AppSpacing.xs),
+                      child: children[i],
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

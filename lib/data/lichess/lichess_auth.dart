@@ -53,8 +53,10 @@ class LichessOAuth {
   LichessOAuth({FlutterAppAuth? appAuth}) : _appAuth = appAuth ?? const FlutterAppAuth();
   final FlutterAppAuth _appAuth;
 
-  static const readScopes = ['study:read'];
-  static const writeScopes = ['study:read', 'study:write'];
+  /// Puzzles count into the player's Lichess rating (D-126).
+  static const puzzleScopes = ['puzzle:read', 'puzzle:write'];
+  static const readScopes = ['study:read', ...puzzleScopes];
+  static const writeScopes = ['study:read', 'study:write', ...puzzleScopes];
 
   /// Opens the Lichess login page and returns an access token.
   /// Throws on cancellation / failure.

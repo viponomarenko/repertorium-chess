@@ -236,47 +236,50 @@ class _PositionEditorScreenState extends ConsumerState<PositionEditorScreen> {
   Widget _palette(Side side) {
     final set = BoardAppearance.pieceSet(ref.watch(settingsProvider).pieceSet);
     final roles = [Role.king, Role.queen, Role.rook, Role.bishop, Role.knight, Role.pawn];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        for (final r in roles)
-          Builder(
-            builder: (context) {
-              final piece = Piece(color: side, role: r);
-              final selected = !_eraser && _brush == piece;
-              return Draggable<Piece>(
-                data: piece,
-                feedback: SizedBox.square(
-                  dimension: AppSizes.tapTarget,
-                  child: Image(image: set.assets[piece.kind]!),
-                ),
-                child: InkWell(
-                  onTap: () => setState(() {
-                    _eraser = false;
-                    _brush = selected ? null : piece;
-                  }),
-                  borderRadius: AppRadius.smAll,
-                  child: Container(
-                    width: AppSizes.tapTarget,
-                    height: AppSizes.tapTarget,
-                    decoration: BoxDecoration(
-                      color: selected ? Theme.of(context).colorScheme.primaryContainer : null,
-                      borderRadius: AppRadius.smAll,
-                    ),
-                    padding: const EdgeInsets.all(AppSpacing.xs),
-                    child: Semantics(
-                      label:
-                          '${side == Side.white ? context.l10n.white : context.l10n.black} ${_roleName(r, context.l10n)}',
-                      selected: selected,
-                      button: true,
-                      child: Image(image: set.assets[piece.kind]!),
+    // A piece dragged out of the palette is not a swipe back (D-101).
+    return BackSwipeGuard(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          for (final r in roles)
+            Builder(
+              builder: (context) {
+                final piece = Piece(color: side, role: r);
+                final selected = !_eraser && _brush == piece;
+                return Draggable<Piece>(
+                  data: piece,
+                  feedback: SizedBox.square(
+                    dimension: AppSizes.tapTarget,
+                    child: Image(image: set.assets[piece.kind]!),
+                  ),
+                  child: InkWell(
+                    onTap: () => setState(() {
+                      _eraser = false;
+                      _brush = selected ? null : piece;
+                    }),
+                    borderRadius: AppRadius.smAll,
+                    child: Container(
+                      width: AppSizes.tapTarget,
+                      height: AppSizes.tapTarget,
+                      decoration: BoxDecoration(
+                        color: selected ? Theme.of(context).colorScheme.primaryContainer : null,
+                        borderRadius: AppRadius.smAll,
+                      ),
+                      padding: const EdgeInsets.all(AppSpacing.xs),
+                      child: Semantics(
+                        label:
+                            '${side == Side.white ? context.l10n.white : context.l10n.black} ${_roleName(r, context.l10n)}',
+                        selected: selected,
+                        button: true,
+                        child: Image(image: set.assets[piece.kind]!),
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-      ],
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 
@@ -330,8 +333,7 @@ class _PositionEditorScreenState extends ConsumerState<PositionEditorScreen> {
             ),
             // The rare FEN actions sit in a menu: four icons squeezed the
             // title to "Position e…".
-            PopupMenuButton<String>(
-              constraints: appMenuConstraints,
+            AppMenuButton<String>(
               icon: const Icon(AppIcons.more),
               tooltip: l.more,
               onSelected: (v) {
@@ -379,31 +381,34 @@ class _PositionEditorScreenState extends ConsumerState<PositionEditorScreen> {
                           button: true,
                           onTap: _editAccessibleSquare,
                           excludeSemantics: true,
-                          child: ChessboardEditor(
-                            size: size,
-                            orientation: _orientation,
-                            pieces: _pieces,
-                            pointerMode: _brush != null || _eraser ? EditorPointerMode.edit : EditorPointerMode.drag,
-                            settings: BoardAppearance.settings(settings),
-                            onEditedSquare: (sq) => setState(() {
-                              if (_eraser) {
-                                _pieces = {..._pieces}..remove(sq);
-                              } else if (_brush != null) {
-                                final existing = _pieces[sq];
-                                _pieces = {..._pieces};
-                                if (existing == _brush) {
-                                  _pieces.remove(sq);
-                                } else {
-                                  _pieces[sq] = _brush!;
+                          // Pieces dragged from the edge file stay on the board (D-101).
+                          child: BackSwipeGuard(
+                            child: ChessboardEditor(
+                              size: size,
+                              orientation: _orientation,
+                              pieces: _pieces,
+                              pointerMode: _brush != null || _eraser ? EditorPointerMode.edit : EditorPointerMode.drag,
+                              settings: BoardAppearance.settings(settings),
+                              onEditedSquare: (sq) => setState(() {
+                                if (_eraser) {
+                                  _pieces = {..._pieces}..remove(sq);
+                                } else if (_brush != null) {
+                                  final existing = _pieces[sq];
+                                  _pieces = {..._pieces};
+                                  if (existing == _brush) {
+                                    _pieces.remove(sq);
+                                  } else {
+                                    _pieces[sq] = _brush!;
+                                  }
                                 }
-                              }
-                            }),
-                            onDroppedPiece: (origin, dest, piece) => setState(() {
-                              _pieces = {..._pieces};
-                              if (origin != null) _pieces.remove(origin);
-                              _pieces[dest] = piece;
-                            }),
-                            onDiscardedPiece: (sq) => setState(() => _pieces = {..._pieces}..remove(sq)),
+                              }),
+                              onDroppedPiece: (origin, dest, piece) => setState(() {
+                                _pieces = {..._pieces};
+                                if (origin != null) _pieces.remove(origin);
+                                _pieces[dest] = piece;
+                              }),
+                              onDiscardedPiece: (sq) => setState(() => _pieces = {..._pieces}..remove(sq)),
+                            ),
                           ),
                         ),
                       ),

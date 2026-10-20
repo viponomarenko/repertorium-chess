@@ -22,6 +22,7 @@ import '../training/mode_sheet.dart';
 import '../training/training_args.dart';
 import '../widgets/common.dart';
 import '../widgets/san_text.dart';
+import 'day_plan.dart';
 
 final introducedTodayProvider = FutureProvider<int>((ref) {
   ref.watch(refreshTickProvider);
@@ -63,16 +64,24 @@ class TodayScreen extends ConsumerWidget {
     final l = context.l10n;
     final reps = ref.watch(repertoiresProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppInfo.name),
-        actions: [
-          IconButton(tooltip: l.statsTitle, icon: const Icon(AppIcons.stats), onPressed: () => context.push('/stats')),
-          IconButton(
-            tooltip: l.settingsTitle,
-            icon: const Icon(AppIcons.settings),
-            onPressed: () => context.push('/settings'),
-          ),
-        ],
+      appBar: PageBar(
+        // In line with the dashboard under it.
+        width: _Dashboard.widthFor(PageScope.widthOf(context)),
+        bar: AppBar(
+          title: const Text(AppInfo.name),
+          actions: [
+            IconButton(
+              tooltip: l.statsTitle,
+              icon: const Icon(AppIcons.stats),
+              onPressed: () => context.push('/stats'),
+            ),
+            IconButton(
+              tooltip: l.settingsTitle,
+              icon: const Icon(AppIcons.settings),
+              onPressed: () => context.push('/settings'),
+            ),
+          ],
+        ),
       ),
       body: reps.when(
         loading: () => const LoadingView(),
@@ -124,6 +133,9 @@ class _Dashboard extends ConsumerWidget {
   /// The dashboard reads best a little narrower than a full page.
   static const double _dashboardWidth = 640;
 
+  /// The width of the dashboard on a page this wide.
+  static double widthFor(double page) => page >= AppBreakpoints.twoColumns ? AppSizes.dashboardWidth : _dashboardWidth;
+
   /// Letter spacing of the capitals on the main button.
   static const double _capsSpacing = 0.8;
 
@@ -149,50 +161,20 @@ class _Dashboard extends ConsumerWidget {
       ref.watch(problemCountProvider),
     ].any((v) => v.isLoading && !v.hasValue);
     if (waiting) return const LoadingView();
-    final introduced = ref.watch(introducedTodayProvider).value ?? 0;
-    final reviewedToday = ref.watch(reviewedTodayProvider).value ?? 0;
-    final reviewLeft = (settings.reviewsPerDay - reviewedToday).clamp(0, 100000);
-    final totalDue = reps.fold<int>(0, (a, r) => a + r.due);
-    final dueCapped = totalDue < reviewLeft ? totalDue : reviewLeft;
-    final totalNew = reps.fold<int>(0, (a, r) => a + r.newCards);
-    final newLeft = (settings.newPerDay - introduced).clamp(0, 100000);
-    final newAvailable = totalNew < newLeft ? totalNew : newLeft;
+    final day = DayPlan.of(ref, reps);
+    final reviewLeft = day.reviewLeft;
+    final totalDue = day.totalDue;
+    final dueCapped = day.dueCapped;
+    final totalNew = day.totalNew;
+    final newLeft = day.newLeft;
+    final newAvailable = day.newAvailable;
     final today = ref.watch(todayCountProvider).value ?? 0;
     final streak = ref.watch(streakProvider).value ?? 0;
     final week = ref.watch(weekActivityProvider).value ?? const <int>[];
-    final problems = ref.watch(problemCountProvider).value ?? const [];
+    final problems = day.problems;
     final nextDue = ref.watch(nextDueProvider).value;
-
-    final problemsByRep = <int, List<String>>{};
-    for (final p in problems) {
-      (problemsByRep[p.repertoireId] ??= []).add(p.key);
-    }
-    // One session, in the order that matters: what is due, then the moves
-    // that keep going wrong, then new ones up to the daily limit (D-065).
-    final stages = [
-      if (dueCapped > 0)
-        TrainingStage(
-          mode: TrainingMode.review,
-          repertoireIds: [
-            for (final r in reps)
-              if (r.due > 0) r.row.id,
-          ],
-        ),
-      if (problemsByRep.isNotEmpty)
-        TrainingStage(
-          mode: TrainingMode.problems,
-          repertoireIds: problemsByRep.keys.toList(),
-          problemKeys: problemsByRep,
-        ),
-      if (newAvailable > 0)
-        TrainingStage(
-          mode: TrainingMode.learn,
-          repertoireIds: [
-            for (final r in reps)
-              if (r.newCards > 0) r.row.id,
-          ],
-        ),
-    ];
+    final problemsByRep = day.problemsByRep;
+    final stages = day.stages;
     final trainButton = stages.isEmpty
         ? null
         : FilledButton.icon(
@@ -216,16 +198,25 @@ class _Dashboard extends ConsumerWidget {
       }
     }
 
+    // What today's session holds, said once (D-116): under the big figure
+    // instead of "N more to the goal", which the figure already says.
+    final plan = trainButton == null
+        ? null
+        : [
+            if (dueCapped > 0) l.stageReviewCount(dueCapped),
+            if (problems.isNotEmpty) l.stageProblemsCount(problems.length),
+            if (newAvailable > 0) l.stageNewCount(newAvailable),
+          ].join(' · ');
     final hasModes = reps.any((r) => r.cards > 0);
     void openModes() => showModeSheet(context, ref, reps: reps);
 
-    final plan = Card(
+    final card = Card(
       child: Padding(
         padding: AppInsets.card,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _GoalHeader(done: today, goal: settings.dailyGoal),
+            _GoalHeader(done: today, goal: settings.dailyGoal, plan: plan),
             AppGap.v16,
             if (trainButton != null) ...[
               // The other modes stand right of the main button, a quiet
@@ -247,16 +238,6 @@ class _Dashboard extends ConsumerWidget {
                     ),
                   ],
                 ],
-              ),
-              AppGap.v8,
-              Text(
-                [
-                  if (dueCapped > 0) l.stageReviewCount(dueCapped),
-                  if (problems.isNotEmpty) l.stageProblemsCount(problems.length),
-                  if (newAvailable > 0) l.stageNewCount(newAvailable),
-                ].join(' · '),
-                textAlign: TextAlign.center,
-                style: context.tt.meta,
               ),
             ],
             if (status != null) ...[
@@ -319,7 +300,8 @@ class _Dashboard extends ConsumerWidget {
         AppGap.v12,
       ],
     ];
-    return RefreshIndicator(
+    // The iOS spinner on an iPhone (D-118).
+    return RefreshIndicator.adaptive(
       onRefresh: () async => ref.read(refreshTickProvider.notifier).bump(),
       child: LayoutBuilder(
         builder: (context, c) {
@@ -332,7 +314,7 @@ class _Dashboard extends ConsumerWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(width: AppSizes.dashboardSide, child: plan),
+                    SizedBox(width: AppSizes.dashboardSide, child: card),
                     AppGap.h24,
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: repertoires),
@@ -344,7 +326,7 @@ class _Dashboard extends ConsumerWidget {
           }
           return ListView(
             padding: AppInsets.page.inPage(context, width: _dashboardWidth),
-            children: [plan, ...repertoires],
+            children: [card, ...repertoires],
           );
         },
       ),
@@ -357,9 +339,12 @@ class _Dashboard extends ConsumerWidget {
 /// and a line saying what is left, marked by a warm dot; the segmented
 /// goal ring beside them.
 class _GoalHeader extends StatelessWidget {
-  const _GoalHeader({required this.done, required this.goal});
+  const _GoalHeader({required this.done, required this.goal, this.plan});
   final int done;
   final int goal;
+
+  /// What today's session holds ("20 new"), when there is a session.
+  final String? plan;
 
   /// The dot before the line under the figure.
   static const double _dot = 8;
@@ -411,7 +396,9 @@ class _GoalHeader extends StatelessWidget {
                     decoration: BoxDecoration(color: reached ? cs.success : cs.flame, shape: BoxShape.circle),
                   ),
                   const SizedBox(width: _dotGap),
-                  Flexible(child: Text(reached ? l.goalDone : l.goalLeft(goal - done), style: context.tt.title)),
+                  Flexible(
+                    child: Text(reached ? l.goalDone : (plan ?? l.goalLeft(goal - done)), style: context.tt.title),
+                  ),
                 ],
               ),
             ],
@@ -597,6 +584,28 @@ class _StreakWeek extends StatelessWidget {
       ],
     );
     if (week.isEmpty) return header;
+    // Nothing yet this week and no streak: one quiet line instead of
+    // "0 answers" and seven empty circles (D-116).
+    if (streak == 0 && total == 0) {
+      return Row(
+        children: [
+          ExcludeSemantics(
+            child: Icon(AppIcons.streak, size: AppSizes.iconLg, color: cs.onSurfaceVariant),
+          ),
+          AppGap.h8,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.streakDays(0), style: context.tt.title),
+                AppGap.v2,
+                Text(l.streakStartHint, style: context.tt.meta),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     Widget day(int i) {
       final count = week[i];
@@ -813,14 +822,6 @@ class _CardDivider extends StatelessWidget {
 }
 
 class RepertoireCard extends StatelessWidget {
-  /// The review button: a compact pill (40 high, 48 to tap) with the play
-  /// mark and the count.
-  static const _dueButton = ButtonStyle(
-    minimumSize: WidgetStatePropertyAll(Size(0, AppSizes.controlSm)),
-    padding: WidgetStatePropertyAll(EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.lg)),
-    tapTargetSize: MaterialTapTargetSize.padded,
-  );
-
   const RepertoireCard({
     super.key,
     required this.summary,
@@ -844,35 +845,11 @@ class RepertoireCard extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final r = summary;
-    final due = reviewLimit == null || r.due < reviewLimit! ? r.due : reviewLimit!;
-    final fresh = newLimit == null || r.newCards < newLimit! ? r.newCards : newLimit!;
     final learnedFrac = r.cards == 0 ? 0.0 : r.learned / r.cards;
-    // The same session as the main button, for this repertoire only.
-    final id = r.row.id;
-    final stages = [
-      if (due > 0) TrainingStage(mode: TrainingMode.review, repertoireIds: [id]),
-      if (problemKeys.isNotEmpty)
-        TrainingStage(mode: TrainingMode.problems, repertoireIds: [id], problemKeys: {id: problemKeys}),
-      if (fresh > 0) TrainingStage(mode: TrainingMode.learn, repertoireIds: [id]),
-    ];
-    Offset? pressedAt;
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () async {
-          // Another repertoire may be open in its tab with moves not added yet.
-          if (await LeaveGuard.canLeave() && context.mounted) context.go('/repertoires/${r.row.id}');
-        },
-        // A long press opens the repertoire's own menu (rename, export,
-        // delete…) where the finger is; the action runs on its screen.
-        onTapDown: (d) => pressedAt = d.globalPosition,
-        onLongPress: () async {
-          Haptics.selection();
-          final at = pressedAt ?? (Offset.zero & MediaQuery.sizeOf(context)).center;
-          final action = await showAppMenu<String>(context, at: at, items: repertoireMenuItems(context));
-          if (action == null || !context.mounted) return;
-          if (await LeaveGuard.canLeave() && context.mounted) context.go('/repertoires/${r.row.id}?action=$action');
-        },
+      child: RepertoireInkWell(
+        summary: r,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(AppSpacing.card, AppSpacing.md, AppSpacing.sm, AppSpacing.md),
           child: Row(
@@ -897,45 +874,143 @@ class RepertoireCard extends StatelessWidget {
                 ),
               ),
               AppGap.h8,
-              // Moves waiting for review sit in the button that trains
-              // them, in ink, not in an alarm-red badge over it (D-088).
-              if (stages.isNotEmpty && due > 0)
-                Tooltip(
-                  message: l.trainDueCount(due),
-                  excludeFromSemantics: true,
-                  child: Semantics(
-                    label: l.trainDueCount(due),
-                    button: true,
-                    excludeSemantics: true,
-                    child: FilledButton.icon(
-                      // The same soft grey as the round play button.
-                      style: _dueButton.merge(
-                        FilledButton.styleFrom(
-                          backgroundColor: theme.colorScheme.secondaryContainer,
-                          foregroundColor: theme.colorScheme.onSecondaryContainer,
-                        ),
-                      ),
-                      onPressed: () => context.push('/train', extra: TrainingArgs.staged(stages)),
-                      icon: const Icon(AppIcons.play, size: AppSizes.iconSm),
-                      label: Text('$due', style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
-                    ),
-                  ),
-                )
-              else if (stages.isNotEmpty)
-                IconButton.filledTonal(
-                  tooltip: l.trainNow,
-                  onPressed: () => context.push('/train', extra: TrainingArgs.staged(stages)),
-                  icon: const Icon(AppIcons.play),
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Icon(AppIcons.ok, semanticLabel: l.allDoneShort),
-                ),
+              RepertoireTrainControl(
+                summary: r,
+                reviewLimit: reviewLimit,
+                newLimit: newLimit,
+                problemKeys: problemKeys,
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A repertoire's card surface: a tap opens it, a long press opens its menu
+/// where the finger is (rename, export, delete…); the action runs on its
+/// screen.
+class RepertoireInkWell extends StatefulWidget {
+  const RepertoireInkWell({super.key, required this.summary, required this.child});
+  final RepertoireSummary summary;
+  final Widget child;
+
+  @override
+  State<RepertoireInkWell> createState() => _RepertoireInkWellState();
+}
+
+class _RepertoireInkWellState extends State<RepertoireInkWell> {
+  Offset? _pressedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final id = widget.summary.row.id;
+    return InkWell(
+      onTap: () async {
+        // Another repertoire may be open in its tab with moves not added yet.
+        if (await LeaveGuard.canLeave() && context.mounted) context.go('/repertoires/$id');
+      },
+      onTapDown: (d) => _pressedAt = d.globalPosition,
+      onLongPress: () async {
+        Haptics.selection();
+        final at = _pressedAt ?? (Offset.zero & MediaQuery.sizeOf(context)).center;
+        final l = context.l10n;
+        final r = widget.summary;
+        final action = await showAppMenu<String>(
+          context,
+          at: at,
+          title: r.row.name,
+          subtitle: l.repertoireCounts(r.learned, r.cards),
+          items: repertoireMenuItems(context),
+        );
+        if (action == null || !context.mounted) return;
+        if (await LeaveGuard.canLeave() && context.mounted) context.go('/repertoires/$id?action=$action');
+      },
+      child: widget.child,
+    );
+  }
+}
+
+/// The training control of a repertoire card: a pill with the play mark
+/// and the number due, a round play button when only new moves are left,
+/// or a check when today is done.
+class RepertoireTrainControl extends StatelessWidget {
+  /// The review button: a compact pill (40 high, 48 to tap) with the play
+  /// mark and the count.
+  static const _dueButton = ButtonStyle(
+    minimumSize: WidgetStatePropertyAll(Size(0, AppSizes.controlSm)),
+    padding: WidgetStatePropertyAll(EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.lg)),
+    tapTargetSize: MaterialTapTargetSize.padded,
+  );
+
+  const RepertoireTrainControl({
+    super.key,
+    required this.summary,
+    this.reviewLimit,
+    this.newLimit,
+    this.problemKeys = const [],
+  });
+  final RepertoireSummary summary;
+  final int? reviewLimit;
+  final int? newLimit;
+  final List<String> problemKeys;
+
+  /// Moves due and new moves within today's limits.
+  static (int due, int fresh) counts(RepertoireSummary r, {int? reviewLimit, int? newLimit}) => (
+    reviewLimit == null || r.due < reviewLimit ? r.due : reviewLimit,
+    newLimit == null || r.newCards < newLimit ? r.newCards : newLimit,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final r = summary;
+    final (due, fresh) = counts(r, reviewLimit: reviewLimit, newLimit: newLimit);
+    // The same session as the main button, for this repertoire only.
+    final id = r.row.id;
+    final stages = [
+      if (due > 0) TrainingStage(mode: TrainingMode.review, repertoireIds: [id]),
+      if (problemKeys.isNotEmpty)
+        TrainingStage(mode: TrainingMode.problems, repertoireIds: [id], problemKeys: {id: problemKeys}),
+      if (fresh > 0) TrainingStage(mode: TrainingMode.learn, repertoireIds: [id]),
+    ];
+    // Moves waiting for review sit in the button that trains them, in
+    // ink, not in an alarm-red badge over it (D-088).
+    if (stages.isNotEmpty && due > 0) {
+      return Tooltip(
+        message: l.trainDueCount(due),
+        excludeFromSemantics: true,
+        child: Semantics(
+          label: l.trainDueCount(due),
+          button: true,
+          excludeSemantics: true,
+          child: FilledButton.icon(
+            // The same soft grey as the round play button.
+            style: _dueButton.merge(
+              FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.secondaryContainer,
+                foregroundColor: theme.colorScheme.onSecondaryContainer,
+              ),
+            ),
+            onPressed: () => context.push('/train', extra: TrainingArgs.staged(stages)),
+            icon: const Icon(AppIcons.play, size: AppSizes.iconSm),
+            label: Text('$due', style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+          ),
+        ),
+      );
+    }
+    if (stages.isNotEmpty) {
+      return IconButton.filledTonal(
+        tooltip: l.trainNow,
+        onPressed: () => context.push('/train', extra: TrainingArgs.staged(stages)),
+        icon: const Icon(AppIcons.play),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Icon(AppIcons.ok, semanticLabel: l.allDoneShort),
     );
   }
 }

@@ -45,11 +45,15 @@ abstract final class AppIcons {
   static const IconData draw = BootstrapIcons.brush;
   static const IconData drill = BootstrapIcons.lightning_charge;
   static const IconData edit = BootstrapIcons.pencil;
-  static const IconData editPosition = BootstrapIcons.pencil_square;
+  // The outline pencil: the square one is heavier than the other icons.
+  static const IconData editPosition = BootstrapIcons.pencil;
   static const IconData engine = BootstrapIcons.cpu;
   static const IconData error = BootstrapIcons.exclamation_circle;
   static const IconData expand = BootstrapIcons.chevron_down;
   static const IconData expandAll = BootstrapIcons.arrows_expand;
+
+  /// Opens a page outside the app (a source on the web).
+  static const IconData externalLink = BootstrapIcons.box_arrow_up_right;
   static const IconData explorer = BootstrapIcons.bar_chart;
   static const IconData flag = BootstrapIcons.flag;
   static const IconData flagFilled = BootstrapIcons.flag_fill;
@@ -96,6 +100,7 @@ abstract final class AppIcons {
   static const IconData previousGame = BootstrapIcons.skip_backward;
   static const IconData privacy = BootstrapIcons.shield_check;
   static const IconData promote = BootstrapIcons.arrow_bar_up;
+  static const IconData puzzle = BootstrapIcons.puzzle;
   static const IconData readingMode = BootstrapIcons.text_paragraph;
   static const IconData redo = BootstrapIcons.arrow_clockwise;
   static const IconData refresh = BootstrapIcons.arrow_repeat;

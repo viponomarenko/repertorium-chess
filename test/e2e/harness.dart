@@ -99,7 +99,8 @@ class TestApp {
   }
 }
 
-/// Pumps the whole app. [settings] default to an onboarded user with no
+/// Pumps the whole app; [network] answers Lichess (offline by default).
+/// [settings] default to an onboarded user with no
 /// animations or delays, so tests run quickly.
 Future<TestApp> pumpApp(
   WidgetTester tester, {
@@ -109,6 +110,7 @@ Future<TestApp> pumpApp(
   Size size = const Size(390, 844),
   double textScale = 1,
   double pixelRatio = 3,
+  http.Client? network,
 }) async {
   tester.view.physicalSize = size * pixelRatio;
   tester.view.devicePixelRatio = pixelRatio;
@@ -140,7 +142,7 @@ Future<TestApp> pumpApp(
         engineServiceProvider.overrideWithValue(engine),
         tokenStoreProvider.overrideWithValue(tokens),
         lichessClientProvider.overrideWithValue(
-          LichessClient(client: offline(), userAgent: 'test', tokenProvider: tokens.read),
+          LichessClient(client: network ?? offline(), userAgent: 'test', tokenProvider: tokens.read),
         ),
       ],
       child: const TabiyaApp(),

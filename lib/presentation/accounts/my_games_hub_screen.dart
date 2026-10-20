@@ -13,10 +13,13 @@ import 'my_games_screen.dart';
 /// downloaded games, the openings played in them, and where they left the
 /// repertoire. These used to be three screens linked by icons.
 class MyGamesHubScreen extends ConsumerStatefulWidget {
-  const MyGamesHubScreen({super.key, this.initialTab = 0});
+  const MyGamesHubScreen({super.key, this.initialTab = 0, this.downloadOnOpen});
 
   /// 0 – games, 1 – openings, 2 – differences from the repertoire.
   final int initialTab;
+
+  /// lichess | chesscom: download its games at once.
+  final String? downloadOnOpen;
 
   @override
   ConsumerState<MyGamesHubScreen> createState() => _MyGamesHubScreenState();
@@ -45,29 +48,35 @@ class _MyGamesHubScreenState extends ConsumerState<MyGamesHubScreen> with Single
   Widget build(BuildContext context) {
     final l = context.l10n;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l.myGames),
-        actions: [
-          // Belongs to the list of games only.
-          if (_tabs.index == 0)
-            PopupMenuButton<String>(
-              constraints: appMenuConstraints,
-              icon: const Icon(AppIcons.more),
-              tooltip: l.more,
-              onSelected: (v) async {
-                final ok = await confirm(context, title: l.clearDownloadedQ, confirmLabel: l.delete, destructive: true);
-                if (ok) await ref.read(accountsServiceProvider).deleteImportedGames();
-              },
-              itemBuilder: (_) => [appMenuItem(value: 'clear', label: l.clearDownloaded)],
-            ),
-        ],
-        bottom: TabBar(
-          controller: _tabs,
-          tabs: [
-            Tab(text: l.tabGames),
-            Tab(text: l.tabOpenings),
-            Tab(text: l.tabGaps),
+      appBar: PageBar(
+        bar: AppBar(
+          title: Text(l.myGames),
+          actions: [
+            // Belongs to the list of games only.
+            if (_tabs.index == 0)
+              AppMenuButton<String>(
+                icon: const Icon(AppIcons.more),
+                tooltip: l.more,
+                onSelected: (v) async {
+                  final ok = await confirm(
+                    context,
+                    title: l.clearDownloadedQ,
+                    confirmLabel: l.delete,
+                    destructive: true,
+                  );
+                  if (ok) await ref.read(accountsServiceProvider).deleteImportedGames();
+                },
+                itemBuilder: (_) => [appMenuItem(value: 'clear', label: l.clearDownloaded)],
+              ),
           ],
+          bottom: TabBar(
+            controller: _tabs,
+            tabs: [
+              Tab(text: l.tabGames),
+              Tab(text: l.tabOpenings),
+              Tab(text: l.tabGaps),
+            ],
+          ),
         ),
       ),
       body: TabBarView(
@@ -75,7 +84,7 @@ class _MyGamesHubScreenState extends ConsumerState<MyGamesHubScreen> with Single
         // The tabs hold boards and horizontal chips: no swiping between them.
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          MyGamesScreen(embedded: true, onTab: _show),
+          MyGamesScreen(embedded: true, onTab: _show, downloadOnOpen: widget.downloadOnOpen),
           MyOpeningsScreen(embedded: true, onTab: _show),
           GapReportScreen(embedded: true, onTab: _show),
         ],

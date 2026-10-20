@@ -46,17 +46,17 @@ const _titleBadge = 28.0;
 /// The actions of a repertoire: the "more" menu of its screen and the menu
 /// a long press on its card opens (the card then runs the chosen action on
 /// the repertoire's screen, see [RepertoireScreen.action]).
-List<PopupMenuEntry<String>> repertoireMenuItems(BuildContext context) {
+List<AppMenuEntry<String>> repertoireMenuItems(BuildContext context) {
   final l = context.l10n;
   return [
     appMenuItem(value: 'rename', icon: AppIcons.edit, label: l.rename),
     appMenuItem(value: 'options', icon: AppIcons.options, label: l.repertoireSettings),
+    appMenuDivider(l.menuImportExport),
     appMenuItem(value: 'importLib', icon: AppIcons.library, label: l.importFromLibrary),
     appMenuItem(value: 'importFile', icon: AppIcons.openFile, label: l.importFromFile),
-    appMenuDivider(),
     appMenuItem(value: 'export', icon: AppIcons.share, label: l.exportPgn),
     appMenuItem(value: 'lichess', icon: AppIcons.cloudUpload, label: l.exportToLichess),
-    appMenuDivider(),
+    appMenuDivider(l.menuTools),
     appMenuItem(value: 'weights', icon: AppIcons.weight, label: l.fillWeights),
     appMenuItem(value: 'engine', icon: AppIcons.engine, label: l.checkWithEngine),
     appMenuDivider(),
@@ -726,10 +726,12 @@ class _RepertoireScreenState extends ConsumerState<RepertoireScreen> with Single
                 icon: const Icon(AppIcons.builder),
               ),
             if (!_editing)
-              PopupMenuButton<String>(
-                constraints: appMenuConstraints,
+              AppMenuButton<String>(
                 icon: const Icon(AppIcons.more),
                 tooltip: l.more,
+                // What the menu is about: the repertoire and how far along.
+                title: row.name,
+                subtitle: summary == null ? null : l.repertoireCounts(summary.learned, summary.cards),
                 onSelected: _menu,
                 itemBuilder: repertoireMenuItems,
               ),
@@ -919,11 +921,7 @@ class _ProblemsTabState extends ConsumerState<_ProblemsTab> {
       children: [
         section(l.deferredConflicts, l.deferredConflictsHint, AppIcons.variations, theme.colorScheme.error, [
           for (final p in deferred)
-            ListTile(
-              title: MovesText(_where(p.key)),
-              trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
-              onTap: () => widget.onOpen(p.key),
-            ),
+            ListTile(title: MovesText(_where(p.key)), trailing: const ListChevron(), onTap: () => widget.onOpen(p.key)),
         ]),
         section(l.gaps, l.gapsHint, AppIcons.help, theme.colorScheme.tertiary, [
           for (final k in gaps.take(200))
@@ -968,7 +966,7 @@ class _ProblemsTabState extends ConsumerState<_ProblemsTab> {
                     ? null
                     : MovesText('${l.engineFlagHint(f.bestSan, f.depth)} −${context.fmtDecimal(f.lossCp / 100)}');
               }(),
-              trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
+              trailing: const ListChevron(),
               onTap: () => widget.onOpen(p.key),
             ),
         ]),
@@ -1155,9 +1153,11 @@ class _RepertoireSettingsPageState extends ConsumerState<RepertoireSettingsPage>
   Widget build(BuildContext context) {
     final l = context.l10n;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l.repertoireSettings),
-        actions: [TextButton(onPressed: _save, child: Text(l.save))],
+      appBar: PageBar(
+        bar: AppBar(
+          title: Text(l.repertoireSettings),
+          actions: [TextButton(onPressed: _save, child: Text(l.save))],
+        ),
       ),
       body: AppPage(
         children: [

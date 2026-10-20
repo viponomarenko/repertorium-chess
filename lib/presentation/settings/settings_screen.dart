@@ -78,7 +78,7 @@ class SettingsScreen extends ConsumerWidget {
     final cores = Platform.numberOfProcessors;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.settingsTitle)),
+      appBar: PageBar(bar: AppBar(title: Text(l.settingsTitle))),
       body: ListView(
         padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom).inPage(context),
         children: groupIntoCards([
@@ -404,7 +404,7 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             title: Text(l.engineLocalModel),
             subtitle: Text(s.engineModel == 'full' ? 'Stockfish 19' : 'Stockfish 19 Light'),
-            trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
+            trailing: const ListChevron(),
             onTap: () => showEngineModelSheet(context),
           ),
           slider(
@@ -481,7 +481,7 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(AppIcons.link),
             title: Text(l.accountsTitle),
-            trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
+            trailing: const ListChevron(),
             onTap: () => context.push('/accounts'),
           ),
           AppExpansionTile(
@@ -553,13 +553,13 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(AppIcons.backup),
             title: Text(l.backupTitle),
             subtitle: Text(l.backupSubtitle),
-            trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
+            trailing: const ListChevron(),
             onTap: () => context.push('/backup'),
           ),
           ListTile(
             leading: const Icon(AppIcons.info),
             title: Text(l.aboutTitle),
-            trailing: const Icon(AppIcons.chevronRight, size: AppSizes.iconMd),
+            trailing: const ListChevron(),
             onTap: () => context.push('/about'),
           ),
           AppGap.v32,

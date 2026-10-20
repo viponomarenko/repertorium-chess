@@ -29,10 +29,23 @@ CODE
 ALGORITHMS
 - FSRS (Free Spaced Repetition Scheduler) — own Dart implementation following
   the open-spaced-repetition reference (MIT).
+- Glicko-2 puzzle rating — own Dart implementation following Mark Glickman's
+  "Example of the Glicko-2 system"; limits and weights as in lichess-org/lila.
 
 DATA
 - Opening names and ECO codes: lichess-org/chess-openings — CC0-1.0
   https://github.com/lichess-org/chess-openings
+- Puzzles: loaded at run time from the Lichess API, and an offline set of
+  about 50 000 puzzles (assets/puzzles/puzzles.tsv.gz, built by
+  tool/puzzles/build_puzzles.py) from the Lichess puzzle database —
+  CC0-1.0, https://database.lichess.org/#puzzles. Theme names and
+  descriptions in the app are our own texts.
+- Opening texts (assets/wikibooks/texts.json.gz): Wikibooks, "Chess Opening
+  Theory" — CC BY-SA 4.0, https://en.wikibooks.org/wiki/Chess_Opening_Theory
+  Authors: the contributors listed in each page's history; every text in the
+  app links to the exact revision it comes from. Changes: wiki markup,
+  tables and navigation removed; Ukrainian machine translation added. The
+  texts and their translation are distributed under CC BY-SA 4.0.
 
 PIECE SETS offered in the app (bundled by chessground; licenses per
 lichess-org/lila COPYING.md):

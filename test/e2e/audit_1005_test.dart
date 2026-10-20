@@ -133,22 +133,34 @@ void main() {
 
   // D-069: one "My games" screen with three tabs; the report is split by
   // what happened, and another first move is not a forgotten one.
-  testWidgets('my games: tabs, report sections, another opening apart', (tester) async {
+  // D-099: a deviation at the first move is not "another opening" folded
+  // away; what the user plays most of the time is a habit on top; a game
+  // as Black opens from Black's side.
+  testWidgets('my games: tabs, report sections, the habit on top', (tester) async {
     final app = await pumpApp(
       tester,
       seed: (db) async {
         await seedRep(db);
-        for (final (i, moves) in ['1. e4 e5 2. Bc4 Nc6 1-0', '1. b3 e5 2. Bb2 Nc6 0-1'].indexed) {
+        final games = [
+          ('1. e4 e5 2. Bc4 Nc6 1-0', 'white'),
+          for (var i = 0; i < 5; i++) ('1. b3 e5 2. Bb2 Nc6 0-1', 'white'),
+          ('1. d4 d5 2. c4 e6 0-1', 'black'),
+        ];
+        for (final (i, (moves, color)) in games.indexed) {
           await db
               .into(db.importedGames)
               .insert(
                 ImportedGamesCompanion.insert(
                   provider: 'lichess',
                   externalId: 'g$i',
-                  pgn: '[White "me"]\n[Black "opp"]\n\n$moves',
+                  pgn: color == 'white'
+                      ? '[White "me"]\n[Black "opp$i"]\n[BlackElo "1500"]\n\n$moves'
+                      : '[White "opp$i"]\n[Black "me"]\n\n$moves',
                   playedAt: DateTime(2026, 9, 1 + i),
-                  userColor: 'white',
-                  result: const Value('1-0'),
+                  userColor: color,
+                  result: Value(moves.split(' ').last),
+                  opponent: Value('opp$i'),
+                  url: Value('https://lichess.org/g$i'),
                 ),
               );
         }
@@ -161,21 +173,40 @@ void main() {
       for (final tab in ['Партії', 'Дебюти', 'Розбіжності']) {
         expect(find.widgetWithText(Tab, tab), findsOneWidget);
       }
-      // Section headers are set in capitals.
-      expect(find.textContaining(RegExp('забули свій хід', caseSensitive: false)), findsOneWidget);
-      expect(find.text('Повторити'), findsOneWidget);
-      // 1.b3 is another opening: folded away, not counted as a forgotten move.
-      expect(find.text('Інший дебют'), findsOneWidget);
-      expect(find.text('Для цього дебюту репертуару немає'), findsNothing);
-      await tapText(tester, 'Інший дебют');
-      expect(find.text('Для цього дебюту репертуару немає'), findsOneWidget);
+      // 1.b3 in 5 of 6 games as White: the habit, with both ways out.
+      expect(find.text('Тут ви зазвичай граєте інакше'), findsOneWidget);
+      expect(find.textContaining('У 5 з 6 партій білими'), findsOneWidget);
+      expect(find.textContaining('Додати b3'), findsOneWidget);
+      // 2.Bc4 is an ordinary deviation in its section; nothing is folded.
+      expect(find.textContaining(RegExp('не за репертуаром', caseSensitive: false)), findsOneWidget);
+      expect(find.textContaining('Вчити'), findsNWidgets(2));
+      expect(find.text('Інший дебют'), findsNothing);
       expectClean(tester);
+
       await tester.tap(find.widgetWithText(Tab, 'Партії'));
       await settle(tester);
-      expect(
-        find.textContaining('vs').evaluate().isNotEmpty || find.textContaining('проти').evaluate().isNotEmpty,
-        isTrue,
-      );
+      // The opponent with their rating; a header per day.
+      expect(find.textContaining('opp5'), findsOneWidget);
+      expect(find.textContaining('1500'), findsWidgets);
+      expect(find.text('7 ВЕРЕСНЯ'), findsOneWidget);
+      // The game as Black opens from Black's side.
+      await tester.tap(find.textContaining('opp6'));
+      await settle(tester);
+      expect(tester.widget<BoardView>(find.byType(BoardView)).orientation, Side.black);
+      expectClean(tester);
+      await tester.tap(find.byTooltip('Назад').first);
+      await settle(tester);
+
+      // A game that left the repertoire: the opponent and their rating in
+      // the title, where it left under it, the neighbours and the site.
+      await tester.tap(find.textContaining('opp5'));
+      await settle(tester);
+      expect(find.text('opp5 1500'), findsOneWidget);
+      expect(find.textContaining('Вихід з репертуару'), findsOneWidget);
+      await tester.tap(find.byTooltip('Ще').last);
+      await settle(tester);
+      expect(find.text('Наступна партія'), findsOneWidget);
+      expect(find.text('Відкрити на Lichess'), findsOneWidget);
       expectClean(tester);
     } finally {
       await app.close(tester);

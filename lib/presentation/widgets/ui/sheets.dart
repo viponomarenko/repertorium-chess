@@ -29,7 +29,10 @@ class SheetHeader extends StatelessWidget {
 /// a card in the middle of a wide screen, where a strip along the bottom
 /// edge is far from both the eyes and the hands (D-084). Closes by a tap
 /// outside, a swipe down (the sheet) or Escape (a keyboard).
-Future<T?> showAppModal<T>(BuildContext context, {required WidgetBuilder builder}) {
+///
+/// [backgroundColor] replaces the sheet's own white: a menu lies on the
+/// page grey so that its white groups stand out (D-114).
+Future<T?> showAppModal<T>(BuildContext context, {required WidgetBuilder builder, Color? backgroundColor}) {
   if (!isWide(context)) {
     return showModalBottomSheet<T>(
       context: context,
@@ -37,6 +40,7 @@ Future<T?> showAppModal<T>(BuildContext context, {required WidgetBuilder builder
       showDragHandle: true,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: backgroundColor,
       builder: builder,
     );
   }
@@ -44,6 +48,7 @@ Future<T?> showAppModal<T>(BuildContext context, {required WidgetBuilder builder
     context: context,
     useRootNavigator: true,
     builder: (ctx) => Dialog(
+      backgroundColor: backgroundColor,
       clipBehavior: Clip.antiAlias,
       insetPadding: const EdgeInsets.all(AppSpacing.xl),
       constraints: const BoxConstraints(maxWidth: AppSizes.sheetCardWidth),

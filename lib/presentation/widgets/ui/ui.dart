@@ -3,8 +3,10 @@
 library;
 
 export '../../theme/app_theme.dart';
+export 'back_swipe.dart';
 export 'basics.dart';
 export 'components.dart';
+export 'grid.dart';
 export 'menu.dart';
 export 'motion.dart';
 export 'notice.dart';

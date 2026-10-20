@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
 import '../../core/l10n.dart';
+import '../../core/window_controls.dart';
 import '../../data/incoming/incoming_files.dart';
 import '../../data/notifications/reminder_service.dart';
 import '../accounts/accounts_providers.dart';
@@ -116,7 +117,10 @@ class _TabiyaAppState extends ConsumerState<TabiyaApp> with WidgetsBindingObserv
       },
       routerConfig: router,
       // Notices come in at the top, over every screen (D-087).
-      builder: (context, child) => NoticeHost(child: child ?? const SizedBox.shrink()),
+      // Everything, notices too, below the iPad window buttons.
+      builder: (context, child) => WindowControlsInset(
+        child: NoticeHost(child: child ?? const SizedBox.shrink()),
+      ),
     );
   }
 }

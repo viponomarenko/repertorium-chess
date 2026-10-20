@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartchess/dartchess.dart' hide PgnComment;
 import 'package:flutter/foundation.dart';
 
@@ -9,10 +11,28 @@ import '../../domain/repertoire/repertoire_graph.dart';
 
 /// Loaded repertoire + navigation state of the position browser/builder.
 class RepertoireController extends ChangeNotifier {
-  RepertoireController(this.id, this.repo);
+  RepertoireController(this.id, this.repo) {
+    // A comment edited in "About this position" over this screen (D-105):
+    // take it into the graph without marking it changed, so a later save
+    // does not write the old text back.
+    _commentEdits = repo.positionCommentEdits.listen((e) {
+      final p = graph?.positions[e.key];
+      if (e.repertoireId != id || p == null || p.comment == e.comment) return;
+      p.comment = e.comment;
+      revision++;
+      notifyListeners();
+    });
+  }
 
   final int id;
   final RepertoireRepository repo;
+  late final StreamSubscription<PositionCommentEdit> _commentEdits;
+
+  @override
+  void dispose() {
+    unawaited(_commentEdits.cancel());
+    super.dispose();
+  }
 
   RepertoireRow? row;
   RepertoireGraph? graph;

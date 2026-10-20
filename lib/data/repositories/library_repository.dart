@@ -149,27 +149,43 @@ class LibraryRepository {
   )..where((c) => c.id.equals(collectionId))).write(CollectionsCompanion(updatedAt: Value(DateTime.now())));
 
   Stream<List<GameRow>> watchGames(int collectionId, {GameFilter filter = const GameFilter()}) {
-    final q = db.select(db.games)..where((g) => g.collectionId.equals(collectionId));
-    final text = filter.query.trim();
-    if (text.isNotEmpty) {
-      for (final word in text.split(RegExp(r'\s+'))) {
-        final like = '%$word%';
-        q.where(
-          (g) =>
-              g.white.like(like) |
+    final q = db.select(db.games)..where((g) => _matches(g, collectionId, filter.query));
+    if (filter.result != null) q.where((g) => g.result.equals(filter.result!));
+    if (filter.eco != null && filter.eco!.isNotEmpty) q.where((g) => g.eco.like('${filter.eco}%'));
+    q.orderBy([(g) => OrderingTerm.asc(g.orderIdx)]);
+    return q.watch();
+  }
+
+  /// How many games of a collection match [query], by result: the counts
+  /// on the result filters (D-104).
+  Stream<Map<String, int>> watchResultCounts(int collectionId, {String query = ''}) {
+    final count = db.games.id.count();
+    final q = db.selectOnly(db.games)
+      ..addColumns([db.games.result, count])
+      ..where(_matches(db.games, collectionId, query))
+      ..groupBy([db.games.result]);
+    return q.watch().map((rows) => {for (final r in rows) r.read(db.games.result)!: r.read(count) ?? 0});
+  }
+
+  /// The games of a collection whose players, event, opening, date or
+  /// headers contain every word of [query].
+  Expression<bool> _matches($GamesTable g, int collectionId, String query) {
+    Expression<bool> e = g.collectionId.equals(collectionId);
+    final text = query.trim();
+    if (text.isEmpty) return e;
+    for (final word in text.split(RegExp(r'\s+'))) {
+      final like = '%$word%';
+      e =
+          e &
+          (g.white.like(like) |
               g.black.like(like) |
               g.event.like(like) |
               g.eco.like(like) |
               g.opening.like(like) |
               g.date.like(like) |
-              g.headersJson.like(like),
-        );
-      }
+              g.headersJson.like(like));
     }
-    if (filter.result != null) q.where((g) => g.result.equals(filter.result!));
-    if (filter.eco != null && filter.eco!.isNotEmpty) q.where((g) => g.eco.like('${filter.eco}%'));
-    q.orderBy([(g) => OrderingTerm.asc(g.orderIdx)]);
-    return q.watch();
+    return e;
   }
 
   /// A game's text without layout differences, to tell the same game
